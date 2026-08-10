@@ -1233,7 +1233,7 @@ def test_release_evidence_rejects_complete_audit_chain_mutants(mutation: Any, ma
 
 def test_public_source_ci_runs_only_bounded_read_only_controls() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    assert "name: Public source checks" in workflow
+    assert "name: Source checks" in workflow
     assert "push:\n" in workflow
     assert "pull_request:" in workflow
     assert "python scripts/verify-release-controls.py" in workflow
