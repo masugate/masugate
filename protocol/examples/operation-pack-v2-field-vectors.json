@@ -1,0 +1,53 @@
+{
+  "contract_version": "masugate.operation-pack-v2-field-vectors.v1",
+  "invalid_model_fields": [
+    {
+      "name": "principal_id",
+      "message": "reserved trust-boundary name"
+    },
+    {
+      "name": "p_rincipal_id",
+      "message": "reserved trust-boundary name"
+    },
+    {
+      "name": "service_api_key",
+      "message": "secret or credential"
+    },
+    {
+      "name": "apikey",
+      "message": "secret or credential"
+    },
+    {
+      "name": "private_key",
+      "message": "secret or credential"
+    },
+    {
+      "name": "access_key",
+      "message": "secret or credential"
+    },
+    {
+      "name": "constructor",
+      "message": "unsafe object key"
+    },
+    {
+      "name": "prototype",
+      "message": "unsafe object key"
+    },
+    {
+      "name": "runtime",
+      "message": "generated-host"
+    },
+    {
+      "name": "model_config",
+      "message": "generated-host"
+    },
+    {
+      "name": "model_dump",
+      "message": "generated-host"
+    },
+    {
+      "name": "model_validate",
+      "message": "generated-host"
+    }
+  ]
+}

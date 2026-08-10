@@ -1,0 +1,167 @@
+{
+  "contract_version": "masugate.host-adapter.v1",
+  "invocation": {
+    "principal": {"id": "adapter:buyer"},
+    "source": {"namespace": "canary", "id": "call-1"},
+    "adapter": {
+      "id": "masugate.canary",
+      "contract_version": "masugate.host-adapter.v1",
+      "capabilities": ["receipt", "cancellation", "locator"]
+    },
+    "action": {"name": "spend.purchase", "arguments": {"amount_cents": 7, "request_ref": "req-1"}}
+  },
+  "manifest": {
+    "contract_version": "masugate.governed-route-manifest.v1",
+    "routes": [
+      {
+        "host_tool": "purchase",
+        "action": "spend.purchase",
+        "arguments": {"amount_cents": "integer", "request_ref": "string"},
+        "owner": {
+          "provider_id": "spend-v1",
+          "position": "protected-external",
+          "connector_id": "purchase-v1"
+        }
+      }
+    ]
+  },
+  "lifecycle": [
+    {
+      "name": "committed",
+      "result": {
+        "operation_id": "00000000-0000-4000-8000-100000000001",
+        "status": "committed",
+        "decision": {"effect": "allow", "policy_id": "golden", "policy_version": "v1", "rule_id": "allow", "reason": "committed"},
+        "payload": {"receipt_id": "r-1"},
+        "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000001",
+        "replayed": false
+      },
+      "locator": {"operation_id": "00000000-0000-4000-8000-100000000001"}
+    },
+    {
+      "name": "denied",
+      "result": {
+        "operation_id": "00000000-0000-4000-8000-100000000002",
+        "status": "denied",
+        "decision": {"effect": "deny", "policy_id": "golden", "policy_version": "v1", "rule_id": "deny", "reason": "denied"},
+        "payload": {},
+        "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000002",
+        "replayed": false
+      },
+      "locator": {"operation_id": "00000000-0000-4000-8000-100000000002"}
+    },
+    {
+      "name": "pending",
+      "result": {
+        "operation_id": "00000000-0000-4000-8000-100000000003",
+        "pending_id": "00000000-0000-4000-8000-200000000003",
+        "status": "pending",
+        "decision": {"effect": "escalate", "policy_id": "golden", "policy_version": "v1", "rule_id": "review", "reason": "pending"},
+        "payload": {},
+        "resolution_plan": "revalidate",
+        "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000003",
+        "replayed": false
+      },
+      "locator": {
+        "operation_id": "00000000-0000-4000-8000-100000000003",
+        "pending_id": "00000000-0000-4000-8000-200000000003"
+      }
+    },
+    {
+      "name": "in_progress",
+      "result": {
+        "operation_id": "00000000-0000-4000-8000-100000000004",
+        "status": "in_progress",
+        "decision": null,
+        "payload": {"execution": "running"},
+        "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000004",
+        "replayed": true
+      },
+      "locator": {"operation_id": "00000000-0000-4000-8000-100000000004"}
+    },
+    {
+      "name": "outcome_unknown",
+      "result": {
+        "operation_id": "00000000-0000-4000-8000-100000000005",
+        "status": "outcome_unknown",
+        "decision": null,
+        "payload": {"execution": "reconcile"},
+        "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000005",
+        "replayed": false
+      },
+      "locator": {"operation_id": "00000000-0000-4000-8000-100000000005"}
+    }
+  ],
+  "cancellation": {
+    "kind": "cancellation",
+    "locator": {
+      "operation_id": "00000000-0000-4000-8000-100000000003",
+      "pending_id": "00000000-0000-4000-8000-200000000003"
+    },
+    "accepted": true
+  },
+  "receipt": {
+    "kind": "receipt",
+    "locator": {"operation_id": "00000000-0000-4000-8000-100000000001"},
+    "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000001",
+    "status": "committed",
+    "marker": "golden"
+  },
+  "canonicalization": {
+    "payload": {
+      "10": "ten",
+      "2": "two",
+      "z_one": 1.0,
+      "tiny": 0.000001,
+      "\ue000": "bmp",
+      "\ud800\udc00": "astral"
+    },
+    "expected_payload_json": "{\"10\":\"ten\",\"2\":\"two\",\"tiny\":0.000001,\"z_one\":1,\"𐀀\":\"astral\",\"\":\"bmp\"}"
+  },
+  "invalid": [
+    {
+      "name": "reserved_argument",
+      "kind": "invocation",
+      "input": {"arguments": {"principal_id": "forged"}}
+    },
+    {
+      "name": "unsafe_integer",
+      "kind": "invocation",
+      "input": {"arguments": {"amount_cents": 9007199254740992}}
+    },
+    {
+      "name": "mismatched_operation_id",
+      "kind": "lifecycle",
+      "input": {
+        "result": "committed",
+        "locator": {"operation_id": "00000000-0000-4000-8000-100000000099"}
+      }
+    },
+    {
+      "name": "mismatched_pending_id",
+      "kind": "lifecycle",
+      "input": {
+        "result": "pending",
+        "locator": {
+          "operation_id": "00000000-0000-4000-8000-100000000003",
+          "pending_id": "00000000-0000-4000-8000-200000000099"
+        }
+      }
+    },
+    {
+      "name": "route_owner_missing_connector",
+      "kind": "manifest",
+      "input": {
+        "contract_version": "masugate.governed-route-manifest.v1",
+        "routes": [
+          {
+            "host_tool": "purchase",
+            "action": "spend.purchase",
+            "arguments": {},
+            "owner": {"provider_id": "spend-v1", "position": "protected-external"}
+          }
+        ]
+      }
+    }
+  ]
+}

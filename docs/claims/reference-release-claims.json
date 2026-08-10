@@ -1,0 +1,325 @@
+{
+  "schema_version": "masugate.claim-evidence-ledger/v1",
+  "release_id": "masugate-openclaw-reference/0.1.0",
+  "release_status": "research-preview",
+  "public_surfaces": [
+    {"path": "README.md", "category": "project"},
+    {"path": "CHANGELOG.md", "category": "project"},
+    {"path": "CITATION.cff", "category": "project"},
+    {"path": "CODE_OF_CONDUCT.md", "category": "project"},
+    {"path": "CONTRIBUTING.md", "category": "project"},
+    {"path": "GOVERNANCE.md", "category": "project"},
+    {"path": "LICENSE", "category": "project"},
+    {"path": "PROVENANCE.md", "category": "project"},
+    {"path": "SECURITY.md", "category": "project"},
+    {"path": "THIRD_PARTY_NOTICES.md", "category": "project"},
+    {"path": "TRADEMARKS.md", "category": "project"},
+    {"path": "docs/README.md", "category": "documentation"},
+    {"path": "docs/architecture.md", "category": "documentation"},
+    {"path": "docs/adapters/crewai.md", "category": "documentation"},
+    {"path": "docs/artifact-evaluation.md", "category": "documentation"},
+    {"path": "docs/claims-and-limitations.md", "category": "documentation"},
+    {"path": "docs/claims/reference-release-claims.json", "category": "claims"},
+    {"path": "docs/code-map.md", "category": "documentation"},
+    {"path": "docs/concepts.md", "category": "documentation"},
+    {"path": "docs/connectors.md", "category": "documentation"},
+    {"path": "docs/expected-results.md", "category": "documentation"},
+    {"path": "docs/extending-masugate.md", "category": "documentation"},
+    {"path": "docs/framework-adapters.md", "category": "documentation"},
+    {"path": "docs/governed-action-walkthrough.md", "category": "documentation"},
+    {"path": "docs/paper-and-provenance.md", "category": "documentation"},
+    {"path": "docs/protected-worker.md", "category": "documentation"},
+    {"path": "docs/protocol.md", "category": "documentation"},
+    {"path": "docs/reproduction.md", "category": "documentation"},
+    {"path": "docs/release-engineering.md", "category": "documentation"},
+    {"path": "docs/testing.md", "category": "documentation"},
+    {"path": "docs/troubleshooting.md", "category": "documentation"},
+    {"path": "protocol/README.md", "category": "protocol"},
+    {"path": "protocol/Host-Adapter-Contract.md", "category": "protocol"},
+    {"path": "protocol/Adapter-Core-Conformance.md", "category": "protocol"},
+    {"path": "adapters/typescript/README.md", "category": "package"},
+    {"path": "adapters/typescript/package.json", "category": "package"},
+    {"path": "adapters/python/README.md", "category": "package"},
+    {"path": "adapters/python/pyproject.toml", "category": "package"},
+    {"path": "adapters/langchain/README.md", "category": "package"},
+    {"path": "adapters/langchain/pyproject.toml", "category": "package"},
+    {"path": "adapters/agent-framework/README.md", "category": "package"},
+    {"path": "adapters/agent-framework/pyproject.toml", "category": "package"},
+    {"path": "adapters/crewai/README.md", "category": "package"},
+    {"path": "adapters/crewai/pyproject.toml", "category": "package"},
+    {"path": "clients/python/README.md", "category": "package"},
+    {"path": "clients/python/pyproject.toml", "category": "package"},
+    {"path": "clients/typescript/README.md", "category": "package"},
+    {"path": "clients/typescript/package.json", "category": "package"},
+    {"path": "connectors/filesystem/README.md", "category": "package"},
+    {"path": "connectors/google-calendar/README.md", "category": "package"},
+    {"path": "connectors/sdk/README.md", "category": "package"},
+    {"path": "connectors/stripe-payment-intent/README.md", "category": "package"},
+    {"path": "gateway/README.md", "category": "package"},
+    {"path": "gateway/package.json", "category": "package"},
+    {"path": "integrations/openclaw/README.md", "category": "package"},
+    {"path": "integrations/openclaw/package.json", "category": "package"},
+    {"path": "integrations/openclaw-contract/README.md", "category": "package"},
+    {"path": "integrations/openclaw-contract/package.json", "category": "package"},
+    {"path": "integrations/openclaw-reference/README.md", "category": "package"},
+    {"path": "integrations/openclaw-reference/pyproject.toml", "category": "package"},
+    {"path": "operations/calendar/README.md", "category": "package"},
+    {"path": "operations/filesystem/README.md", "category": "package"},
+    {"path": "operations/spend/README.md", "category": "package"},
+    {"path": "src/masugate/pss/README.md", "category": "package"},
+    {"path": "package.json", "category": "package"},
+    {"path": "pyproject.toml", "category": "package"},
+    {"path": "scripts/build-reference-container-artifact.py", "category": "gate"},
+    {"path": "scripts/build-connector-worker-artifact.py", "category": "gate"},
+    {"path": "scripts/build-reference-release.py", "category": "gate"},
+    {"path": "scripts/demo-race.py", "category": "demo"},
+    {"path": "scripts/demo-receipt.py", "category": "demo"},
+    {"path": "scripts/demo-recovery.py", "category": "demo"},
+    {"path": "scripts/prepare-reference-demo.py", "category": "gate"},
+    {"path": "scripts/run-reference-containment-live.py", "category": "gate"},
+    {"path": "scripts/run-reference-demos.py", "category": "demo"},
+    {"path": "scripts/run-reference-release-gate.py", "category": "gate"},
+    {"path": "scripts/run_reference_demos.py", "category": "demo"},
+    {"path": "scripts/verify-flagship-demo.py", "category": "gate"},
+    {"path": "scripts/optional-connector-preflight.py", "category": "gate"},
+    {"path": "scripts/verify-npm-clean-consumer.py", "category": "gate"},
+    {"path": "scripts/verify-documentation.py", "category": "gate"},
+    {"path": "scripts/verify-release-controls.py", "category": "gate"},
+    {"path": "scripts/verify-reference-containment.py", "category": "gate"},
+    {"path": "release/reference-release.json", "category": "release"},
+    {"path": "release/compatibility-matrix.json", "category": "release"},
+    {"path": "release/package-catalog.json", "category": "release"}
+  ],
+  "claims": [
+    {
+      "id": "PSS-DECLARED-STATE",
+      "statement": "Governed terminal histories are policy-state serializable over declared policy state.",
+      "premises": [
+        "Every policy-relevant state transition is represented by a conforming provider and remains inside its coordination domain.",
+        "The published complete-mediation profile remains enabled for the named protected resources."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest tests/test_pss.py",
+          "result": "The checker accepts legal serializations and rejects stale-authorization histories and mutant checkers.",
+          "paths": ["tests/test_pss.py"]
+        },
+        {
+          "gate": "pytest -m reference_demo_demo_live tests/test_reference_demo_reference_demos.py",
+          "result": "The clean-artifact Race and procurement workloads retain replayable governed PSS histories.",
+          "paths": ["tests/test_reference_demo_reference_demos.py"]
+        }
+      ]
+    },
+    {
+      "id": "TRUSTED-TOOL-IDENTITY",
+      "statement": "The pinned OpenClaw adapter derives governed-tool identity from trusted host context and returns the MasuGate-owned result without a second native effect.",
+      "premises": [
+        "The exact pinned OpenClaw contract and allowlisted MasuGate-owned tool profile are used.",
+        "Model-controlled fields are not treated as fleet, principal, session, or tool-call authority."
+      ],
+      "evidence": [
+        {
+          "gate": "npm test --workspace @masugate/openclaw",
+          "result": "Spoofed identity, poisoned descriptions, replay, and duplicate native execution are rejected by the adapter tests.",
+          "paths": [
+            "integrations/openclaw/package.json",
+            "integrations/openclaw/test/approval.test.ts",
+            "integrations/openclaw/test/host-profile.test.mjs",
+            "integrations/openclaw/test/plugin.test.ts"
+          ]
+        },
+        {
+          "gate": "pytest tests/test_openclaw_spend_integration.py",
+          "result": "The host-resolved governed purchase returns the authoritative MasuGate result through the integration boundary.",
+          "paths": ["tests/test_openclaw_spend_integration.py"]
+        }
+      ]
+    },
+    {
+      "id": "COMPLETE-MEDIATION-PROFILE",
+      "statement": "The published reference profile blocks tested direct paths to its named protected resources.",
+      "premises": [
+        "Deployment administrators retain the checked-in sandbox, network, credential, mount, and tool restrictions.",
+        "The claim covers the named reference resources and tested escape paths, not every host or deployment topology."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest -m containment_live tests/test_openclaw_reference_containment_live.py",
+          "result": "Live shell, network, child-process, native-tool, credential, and protected-mount probes fail closed in the pinned topology.",
+          "paths": ["tests/test_openclaw_reference_containment_live.py"]
+        },
+        {
+          "gate": "python scripts/verify-reference-containment.py",
+          "result": "The static containment manifest and network topology match the published profile and pinned assets.",
+          "paths": ["scripts/verify-reference-containment.py"]
+        }
+      ]
+    },
+    {
+      "id": "DURABLE-APPROVAL-RECOVERY",
+      "statement": "The bounded reference purchase preserves or revalidates approval authority and converges through tested restart boundaries without duplicate connector effects.",
+      "premises": [
+        "The reference connector preserves its idempotency, status-query, and fencing contract.",
+        "Outcome-unknown work remains visible for reconciliation instead of being guessed or blindly replayed."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest -m gateway_recovery_acceptance tests/test_spend_reference_app.py",
+          "result": "Real-PostgreSQL approval hold, expiry, duplicate resolution, restart, and audit paths converge durably.",
+          "paths": ["tests/test_spend_reference_app.py"]
+        },
+        {
+          "gate": "pytest -m gateway_recovery_crash_live tests/test_gateway_recovery_gateway_crash_matrix.py",
+          "result": "The pinned Gateway bridge survives the named pre-handoff, post-handoff, and post-result crash matrix with one effect.",
+          "paths": ["tests/test_gateway_recovery_gateway_crash_matrix.py"]
+        },
+        {
+          "gate": "pytest -m reference_demo_demo_live tests/test_reference_demo_reference_demos.py",
+          "result": "Approval Replay and Recovery finish from clean artifacts with one durable operation and connector receipt.",
+          "paths": ["tests/test_reference_demo_reference_demos.py"]
+        }
+      ]
+    },
+    {
+      "id": "REPLAYABLE-RECEIPTS",
+      "statement": "Reference governance records retain enough versioned evidence to replay the tested authorization and protected-execution bindings.",
+      "premises": [
+        "Receipt integrity is checked against canonical hashes and release provenance within the retained artifact set.",
+        "The records are not a signed or independently witnessed attestation."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest tests/test_protocol_schemas.py tests/test_protocol_contract.py",
+          "result": "Closed schemas and semantic parsers reject contradictory request, policy, entitlement, receipt, and terminal evidence.",
+          "paths": [
+            "tests/test_protocol_schemas.py",
+            "tests/test_protocol_contract.py"
+          ]
+        },
+        {
+          "gate": "pytest tests/test_reference_demo_reference_demos.py",
+          "result": "Self-consistent provenance, authorization, receipt, timing, ledger, and history mutants are rejected.",
+          "paths": ["tests/test_reference_demo_reference_demos.py"]
+        }
+      ]
+    },
+    {
+      "id": "REPRODUCIBLE-REFERENCE-RELEASE",
+      "statement": "The bounded amd64 CPython 3.12 reference preview is assembled from a coherent manifest and checksummed clean artifacts.",
+      "premises": [
+        "The clean-install-only schema boundary and exact pinned runtime target are respected.",
+        "Publication, upgrade compatibility, and support for arbitrary platforms are not implied."
+      ],
+      "evidence": [
+        {
+          "gate": "python scripts/build-reference-release.py --verify-only",
+          "result": "Manifest, package, image, lock, catalog, provider, schema, and release identities agree before assembly.",
+          "paths": ["scripts/build-reference-release.py"]
+        },
+        {
+          "gate": "pytest tests/test_release_identity.py",
+          "result": "Deterministic builds, closed artifact inventories, checksums, CycloneDX SBOM, and provenance are verified with drift mutants.",
+          "paths": ["tests/test_release_identity.py"]
+        }
+      ]
+    },
+    {
+      "id": "BOUNDED-ADVERSARIAL-SLICE",
+      "statement": "The clean-artifact gate reports zero governed attack successes for the named adapted AgentDojo and ASB slice over the declared mediated purchase route.",
+      "premises": [
+        "The versioned selected slice, pinned upstream revisions, and complete-mediation profile remain unchanged.",
+        "The result covers the declared reference purchase route and tested attack envelopes, not a full upstream corpus or arbitrary model behavior."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest -m release_verification_release_live tests/test_release_verification_reference_release.py",
+          "result": "The clean-artifact gate runs the adapted attack cases, a deliberately compromised Gateway session, the concurrent protected-resource add-on, and the direct-access oracle.",
+          "paths": ["tests/test_release_verification_reference_release.py"]
+        }
+      ]
+    },
+    {
+      "id": "AUTHORIZATION-AND-STATE-BOUNDARIES",
+      "statement": "The clean-artifact gate records an allowed task-semantically-wrong purchase and detects its deliberate out-of-band budget mutation against retained spend records.",
+      "premises": [
+        "The disposable reference database retains both budget state and consumed-entitlement records for the bounded reconciliation comparison.",
+        "The detection is not an independent signing or tamper-evidence mechanism."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest -m release_verification_release_live tests/test_release_verification_reference_release.py",
+          "result": "The gate requires the wrong-but-authorized action to commit and rejects evidence whose unexplained state transition is not derived from durable records.",
+          "paths": ["tests/test_release_verification_reference_release.py"]
+        }
+      ]
+    },
+    {
+      "id": "BOUNDED-FLEET-MEASUREMENTS",
+      "statement": "The clean-artifact gate retains raw two-principal fleet timing samples, derived p50/p95/p99 and throughput, driver/stack resource observations, and the stated coordinator-loss result.",
+      "premises": [
+        "The measurements apply only to the named release, fixed workload, pinned topology, and observing environment.",
+        "The server-to-server connector comparison bypasses provider admission and is not part of the governed claim."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest -m release_verification_release_live tests/test_release_verification_reference_release.py",
+          "result": "The gate validates every reported percentile against retained samples and requires coordinator loss to block the consequential Gateway action while bounded content remains available.",
+          "paths": ["tests/test_release_verification_reference_release.py"]
+        }
+      ]
+    },
+    {
+      "id": "PINNED-OPENCLAW-INTEGRATION",
+      "statement": "The clean-artifact gate records the pinned OpenClaw integration footprint, no-fork check, and Compose-start-to-first-governed-action time for the named reference stack.",
+      "premises": [
+        "The OpenClaw 2026.7.1 compatibility pin, packed adapter, MasuGate-owned tools, and checked-in sandbox profile are used.",
+        "The result is specific to this OpenClaw plugin and does not establish a generic MCP integration."
+      ],
+      "evidence": [
+        {
+          "gate": "pytest -m release_verification_release_live tests/test_release_verification_reference_release.py",
+          "result": "The gate verifies package and release pin agreement, rejects a copied runtime in the adapter tree, records line-count inputs, and validates the generated integration evidence.",
+          "paths": ["tests/test_release_verification_reference_release.py"]
+        }
+      ]
+    }
+  ],
+  "excluded_guarantees": [
+    {
+      "id": "EX-LIVENESS",
+      "statement": "No liveness, fairness, bounded-wait, or no-starvation theorem is claimed.",
+      "status": "excluded"
+    },
+    {
+      "id": "EX-TAMPER-ATTESTATION",
+      "statement": "Receipts are not tamper-evident records, signed attestations, or auditor-accepted evidence.",
+      "status": "excluded"
+    },
+    {
+      "id": "EX-UNIVERSAL-MEDIATION",
+      "statement": "Complete mediation is demonstrated only for named resources and tested paths in the published reference profile.",
+      "status": "excluded"
+    },
+    {
+      "id": "EX-TASK-CORRECTNESS",
+      "statement": "Authorization correctness does not establish that an allowed action is task-semantically correct.",
+      "status": "excluded"
+    },
+    {
+      "id": "EX-LEGAL-SUFFICIENCY",
+      "statement": "Reference policy projections and records are not authoritative legal determinations or compliance sufficiency evidence.",
+      "status": "excluded"
+    },
+    {
+      "id": "EX-PRODUCTION-READINESS",
+      "statement": "The release does not make a high-availability or production assurance claim.",
+      "status": "excluded"
+    },
+    {
+      "id": "EX-EXTERNAL-VALIDITY",
+      "statement": "External validity on a named realistic workload remains deferred; this release deliberately does not make that claim.",
+      "status": "deferred"
+    }
+  ]
+}

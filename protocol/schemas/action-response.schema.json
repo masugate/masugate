@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/schemas/action-response.schema.json",
+  "title": "Governed action result",
+  "description": "The result of executing or resolving a governed action. Terminal and human-pending states couple status to a policy decision; protected operational states carry a null decision so an allow can never be returned as a detached token.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "status",
+    "decision",
+    "payload",
+    "audit_ref",
+    "replayed"
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": ["committed", "denied", "pending", "in_progress", "outcome_unknown"]
+    },
+    "decision": {
+      "oneOf": [
+        {"$ref": "#/$defs/decision"},
+        {"type": "null"}
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "pending_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "resolution_plan": {
+      "enum": ["revalidate", "scoped-hold", "reservation-proof"]
+    },
+    "reservation_safety_certificate_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reservation_entitlement_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "audit_ref": {
+      "type": "string",
+      "pattern": "^/v1/audit/[^/]+$"
+    },
+    "replayed": {
+      "type": "boolean"
+    }
+  },
+  "oneOf": [
+    {
+      "title": "Committed allow",
+      "properties": {
+        "status": {"const": "committed"},
+        "decision": {
+          "type": "object",
+          "properties": {
+            "effect": {"const": "allow"}
+          }
+        },
+        "pending_id": false,
+        "resolution_plan": false,
+        "reservation_safety_certificate_digest": false,
+        "reservation_entitlement_digest": false
+      }
+    },
+    {
+      "title": "Terminal deny",
+      "properties": {
+        "status": {"const": "denied"},
+        "decision": {
+          "type": "object",
+          "properties": {
+            "effect": {"const": "deny"}
+          }
+        },
+        "pending_id": false,
+        "resolution_plan": false,
+        "reservation_safety_certificate_digest": false,
+        "reservation_entitlement_digest": false
+      }
+    },
+    {
+      "title": "Pending escalation",
+      "required": ["pending_id"],
+      "properties": {
+        "status": {"const": "pending"},
+        "decision": {
+          "type": "object",
+          "properties": {
+            "effect": {"const": "escalate"}
+          }
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "resolution_plan",
+            "reservation_safety_certificate_digest",
+            "reservation_entitlement_digest"
+          ],
+          "properties": {
+            "resolution_plan": {"const": "reservation-proof"}
+          }
+        },
+        {
+          "required": ["resolution_plan"],
+          "properties": {
+            "resolution_plan": {"enum": ["revalidate", "scoped-hold"]},
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        },
+        {
+          "properties": {
+            "resolution_plan": false,
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        }
+      ]
+    },
+    {
+      "title": "Protected execution in progress",
+      "properties": {
+        "status": {"const": "in_progress"},
+        "decision": {"type": "null"},
+        "pending_id": false,
+        "resolution_plan": false,
+        "reservation_safety_certificate_digest": false,
+        "reservation_entitlement_digest": false
+      }
+    },
+    {
+      "title": "Protected execution outcome unknown",
+      "properties": {
+        "status": {"const": "outcome_unknown"},
+        "decision": {"type": "null"},
+        "pending_id": false,
+        "resolution_plan": false,
+        "reservation_safety_certificate_digest": false,
+        "reservation_entitlement_digest": false
+      }
+    }
+  ],
+  "$defs": {
+    "evaluated_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "policy_version"],
+      "properties": {
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect",
+        "policy_id",
+        "policy_version",
+        "rule_id",
+        "reason"
+      ],
+      "properties": {
+        "effect": {
+          "enum": ["allow", "deny", "escalate"]
+        },
+        "policy_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_version": {
+          "type": "string"
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string"
+        },
+        "evaluated_policies": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evaluated_policy"},
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

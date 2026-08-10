@@ -1,0 +1,27 @@
+{
+  "schema_version": "masugate.reference-release.compatibility/v1",
+  "release_id": "masugate-openclaw-reference/0.1.0",
+  "runtime_target": {"os": "linux", "architecture": "amd64", "python_abi": "cp312"},
+  "artifacts": [
+    {"purl": "pkg:npm/%40masugate/adapter-core@0.1.0", "formats": ["npm-tarball"]},
+    {"purl": "pkg:npm/%40masugate/client@0.1.0", "formats": ["npm-tarball"]},
+    {"purl": "pkg:npm/%40masugate/mcp-gateway@0.1.0", "formats": ["npm-tarball"]},
+    {"purl": "pkg:npm/%40masugate/openclaw@0.1.0", "formats": ["npm-tarball"]},
+    {"purl": "pkg:pypi/masugate-adapter-core@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-agent-framework@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-client@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-connector-filesystem@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-connector-google-calendar@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-connector-sdk@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-connector-stripe-payment-intent@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-crewai@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-langchain@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-openclaw-reference@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-operation-calendar@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-operation-filesystem@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate-operation-spend@0.1.0", "formats": ["wheel", "sdist"]},
+    {"purl": "pkg:pypi/masugate@0.1.0", "formats": ["wheel", "sdist"]}
+  ],
+  "pinned_host": {"agent-framework-core": "1.12.0", "crewai": "1.15.6", "langchain": "1.3.14", "langgraph": "1.2.9", "node": "24.16.0", "openclaw": "2026.7.1"},
+  "boundary": "The matrix describes only this declared Linux/amd64 CPython 3.12 reference release. It does not claim upgrade or cross-platform compatibility."
+}

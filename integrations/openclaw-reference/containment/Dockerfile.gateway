@@ -1,0 +1,45 @@
+FROM node:24.16.0-alpine@sha256:21f403ab171f2dc89bad4dd69d7721bfd15f084ccb46cdd225f31f2bc59b5c9a
+
+WORKDIR /opt/openclaw
+# The pinned OpenClaw Docker backend invokes the local Docker CLI to create
+# its session sandbox.  The socket mount alone is not sufficient.
+COPY artifacts/offline/alpine/keys/ /etc/apk/keys/
+COPY artifacts/offline/alpine/repositories/ /opt/masugate-offline/alpine/
+RUN apk --no-network --no-cache \
+    --repository /opt/masugate-offline/alpine/main \
+    --repository /opt/masugate-offline/alpine/community \
+    add docker-cli
+COPY integrations/openclaw-contract/package.json integrations/openclaw-contract/package-lock.json ./
+COPY artifacts/offline/npm/cache/ /opt/masugate-offline/npm-cache/
+RUN npm ci --offline --ignore-scripts --cache=/opt/masugate-offline/npm-cache
+# Build the plugin and its local MasuGate client from tracked source.  ``dist/``
+# is deliberately ignored as a developer/package artifact, so copying it into
+# this acceptance image would make a fresh checkout run stale or absent code.
+# The pinned contract lock above supplies TypeScript, OpenClaw, and TypeBox.
+COPY clients/typescript/package.json clients/typescript/tsconfig.json ./masugate-client/
+COPY clients/typescript/src ./masugate-client/src
+RUN ./node_modules/.bin/tsc -p ./masugate-client/tsconfig.json \
+ && mkdir -p ./node_modules/@masugate/client \
+ && cp ./masugate-client/package.json ./node_modules/@masugate/client/package.json \
+ && cp -R ./masugate-client/dist ./node_modules/@masugate/client/dist
+COPY adapters/typescript/package.json adapters/typescript/tsconfig.json ./masugate-adapter-core/
+COPY adapters/typescript/src ./masugate-adapter-core/src
+COPY adapters/typescript/scripts ./masugate-adapter-core/scripts
+RUN npm run build --prefix ./masugate-adapter-core \
+ && mkdir -p ./node_modules/@masugate/adapter-core \
+ && cp ./masugate-adapter-core/package.json ./node_modules/@masugate/adapter-core/package.json \
+ && cp -R ./masugate-adapter-core/dist ./node_modules/@masugate/adapter-core/dist
+COPY integrations/openclaw/package.json integrations/openclaw/openclaw.plugin.json integrations/openclaw/tsconfig.json ./masugate-plugin/
+COPY integrations/openclaw/src ./masugate-plugin/src
+COPY integrations/openclaw/test ./masugate-plugin/test
+RUN ./node_modules/.bin/tsc -p ./masugate-plugin/tsconfig.json \
+ && cp ./masugate-plugin/openclaw.plugin.json ./masugate-plugin/dist/src/openclaw.plugin.json
+COPY integrations/openclaw-reference/safe-content-plugin ./reference-safe-content-plugin
+COPY integrations/openclaw-reference/containment/openclaw-sandbox.json ./openclaw-sandbox.json
+COPY integrations/openclaw-reference/containment/gateway-entrypoint.mjs ./
+COPY integrations/openclaw-reference/containment/gateway-model-fixture.mjs ./
+COPY integrations/openclaw-reference/containment/gateway-live-session.mjs ./
+COPY integrations/openclaw-reference/containment/gateway-gateway_recovery-session.mjs ./
+COPY integrations/openclaw-reference/containment/gateway-gateway_recovery-approval.mjs ./
+
+CMD ["node", "gateway-entrypoint.mjs"]

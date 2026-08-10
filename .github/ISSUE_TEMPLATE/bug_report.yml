@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible defect in the public source release.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, private data, or live-service identifiers.
+        Report vulnerabilities privately at masugate.governance@gmail.com.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide a minimal, credential-free reproduction.
+      placeholder: |
+        1. Run ...
+        2. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: MasuGate version or commit
+      placeholder: "0.1.0 or commit SHA"
+    validations:
+      required: true

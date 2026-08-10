@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "masugate-operation-calendar"
+version = "0.1.0"
+description = "Narrow calendar operation pack for MasuGate"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+dependencies = ["masugate==0.1.0", "masugate-connector-sdk==0.1.0"]
+
+[project.urls]
+Homepage = "https://github.com/MasuGateGovernance/MasuGate"
+Source = "https://github.com/MasuGateGovernance/MasuGate"
+Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/masugate_operation_calendar"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/masugate_operation_calendar/operation-pack.json" = "masugate_operation_calendar/operation-pack.json"

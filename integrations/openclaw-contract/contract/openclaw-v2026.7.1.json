@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted-with-explicit-restart-boundary",
+  "release": {
+    "tag": "v2026.7.1",
+    "commit": "2d2ddc43d0dcf71f31283d780f9fe9ff4cc04fe4",
+    "publishedAt": "2026-07-13T22:33:14Z",
+    "url": "https://github.com/openclaw/openclaw/releases/tag/v2026.7.1",
+    "license": "MIT",
+    "releaseManifestSha256": "8be7423d343ce50cce75a3b16f007d42c9a87c2f25a66cd56b7a81ff79f8f715",
+    "releaseManifestChecksumFileSha256": "464f1d0dd3da1677bbaaf8b6505225aee70cae5eadec01e15abf46623fb66016"
+  },
+  "container": {
+    "tag": "ghcr.io/openclaw/openclaw:2026.7.1",
+    "image": "ghcr.io/openclaw/openclaw@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c",
+    "indexDigest": "sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c",
+    "linuxAmd64ManifestDigest": "sha256:165b4992f1b4b74ffdd7a02c887ba006f9f5dc951eca420eef573a8b233b543f",
+    "linuxAmd64ConfigDigest": "sha256:bea24f56d272d347a2821c9280c7af05cb384b20e3e34fd332ed9ef8bf735528",
+    "linuxArm64ManifestDigest": "sha256:38b611f494cb32e15aaf456d54c6b6be55db9098c90632aed0bfad4a70009707",
+    "nodeVersion": "24.16.0",
+    "sourceRevisionLabel": "2d2ddc43d0dcf71f31283d780f9fe9ff4cc04fe4",
+    "licenseLabel": "MIT"
+  },
+  "node": {
+    "version": "24.16.0",
+    "linuxX64Archive": "https://nodejs.org/dist/v24.16.0/node-v24.16.0-linux-x64.tar.xz",
+    "linuxX64Sha256": "d804845d34eddc21dc1092b519d643ef40b1f58ec5dec5c22b1f4bd8fabde6c9"
+  },
+  "npm": {
+    "name": "openclaw",
+    "version": "2026.7.1",
+    "tarball": "https://registry.npmjs.org/openclaw/-/openclaw-2026.7.1.tgz",
+    "integrity": "sha512-ge/Xss99CHAjPL/ikmH/UFoiOrjcxDB4sW3y9mhyCD+dYW3wzV7TKbAVdkrXFgAG2d2BjpJofP97zUZ+umxo8g==",
+    "shasum": "172e412fa905d8f5bddb46e94e2b15497b2fb768",
+    "enginesNode": ">=22.22.3 <23 || >=24.15.0 <25 || >=25.9.0",
+    "requiredSdkExports": [
+      "./plugin-sdk/plugin-entry",
+      "./plugin-sdk/agent-harness",
+      "./plugin-sdk/infra-runtime",
+      "./plugin-sdk/tool-results"
+    ]
+  },
+  "toolContract": {
+    "registration": "OpenClawPluginApi.registerTool(factory, options)",
+    "trustedFactoryContext": ["agentId", "sessionId", "sessionKey"],
+    "requiredExecutionIdentity": "host-delivered factory context agentId + sessionKey + sessionId and execute(host-delivered toolCallId, params, signal, onUpdate)",
+    "automaticReplayAfterProcessRestart": false,
+    "runIdUse": "not present in the plugin tool factory context and therefore not part of the MasuGate request identity",
+    "masugateIdempotencyNamespace": "openclaw:v2:sha256(canonical JSON tuple [openclaw,2,agentId,sessionKey,sessionId,toolCallId]); same-id duplicate delivery only, not provider-retry identity",
+    "missingOrConflictingIdentity": "block before approval or effect",
+    "resultOwner": "registered MasuGate tool",
+    "nativeEffectAfterResult": false,
+    "mcpDependency": "none for the flagship plugin path"
+  },
+  "approval": {
+    "hook": "before_tool_call.requireApproval",
+    "backgroundNativeApprovalRpc": "unavailable to installed plugins: runtime.gateway.request is operator.write scoped while plugin.approval.* requires operator.approvals",
+    "allowedDecisions": ["allow-once", "deny"],
+    "resolutionEvents": ["allow-once", "allow-always", "deny", "timeout", "cancelled"],
+    "timeoutCapMs": 600000,
+    "timeoutBehavior": "deny",
+    "resolutionCallbackOrdering": "OpenClaw fire-and-forgets onResolution; a returned allow is not proof that an async callback completed",
+    "allowAlwaysForConsequentialActions": false,
+    "durableAcrossGatewayRestart": false,
+    "recoveryAuthority": "MasuGate pending ledger",
+    "restartBehavior": "discard the orphaned native presentation and reconcile the MasuGate pending id; the 2.0 test helper proves queued next-turn reminder behavior only, while production reminder/requeue wiring, the authoritative resume tool, and resolution handoff are Step 2.4 work",
+    "resultDeliveryAfterRestart": "the 2.0 oracle proves durable reminder delivery only; Step 2.4 must validate the pending locator and re-enter MasuGate before any effect; never replay the external effect"
+  },
+  "sandbox": {
+    "enabledByDefault": false,
+    "pinnedEnabledDefaults": {
+      "backend": "docker",
+      "network": "none",
+      "readOnlyRoot": true,
+      "capDrop": ["ALL"]
+    },
+    "reference_containment_enforcement": "Step 2.3 publishes and adversarially tests the complete-mediation profile"
+  },
+  "maintenance": {
+    "supportedOpenClawReleaseCount": 1,
+    "upgradeRule": "No tag, image, Node, or SDK bump without updating this manifest and passing the full compatibility harness.",
+    "forkAllowed": false,
+    "internalOracleImportsAllowedInProductionPlugin": false,
+    "securityUpdates": "Repin promptly, rerun the oracle, and review identity, result, approval, restart, and sandbox deltas before merge."
+  }
+}

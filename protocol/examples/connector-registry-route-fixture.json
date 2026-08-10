@@ -1,0 +1,28 @@
+{
+  "contract_version": "masugate.connector-registry.v2",
+  "connectors": [
+    {
+      "id": "reference-route-fixture-v1",
+      "version": "1.0.0",
+      "package_id": "masugate-connector-route-fixture",
+      "package_version": "1.0.0",
+      "entry_point": "reference-route-fixture",
+      "sdk_contract_version": "masugate.connector-sdk.v1",
+      "implementation_digest": "c110fbbb2c3d183192e4109bdfc8a847b7de36f91491ac619474478caf800ec8",
+      "configuration_digest": "6e6daa95e0fbd6d8b832b4f6d0396986ae11e465405d076bd6d85e68e89c8944",
+      "credential_refs": ["route_fixture_credential"],
+      "allowed_destinations": ["route_fixture_destination"],
+      "capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+      "capability_profile": {
+        "idempotent_dispatch": true,
+        "status_query": true,
+        "cancellation": true,
+        "fencing": true,
+        "max_payload_bytes": 512,
+        "max_result_bytes": 512,
+        "ambiguity_handling": "status-query"
+      },
+      "maturity": "reference-effect"
+    }
+  ]
+}

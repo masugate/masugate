@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/deployments/openclaw-reference/containment/manifest.schema.json",
+  "title": "MasuGate OpenClaw reference containment manifest",
+  "description": "The bounded reference containment inventory for one pinned OpenClaw reference deployment. Semantic completeness and cross-artifact bindings are checked by masugate_openclaw_reference.containment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "pinned_openclaw",
+    "protected_resources",
+    "surfaces"
+  ],
+  "properties": {
+    "schema_version": {"const": "masugate.openclaw-reference.containment/v1"},
+    "profile_id": {"const": "masugate-openclaw-reference/v1"},
+    "pinned_openclaw": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "node_runtime"],
+      "properties": {
+        "version": {"const": "2026.7.1"},
+        "node_runtime": {"const": "24.16.0"}
+      }
+    },
+    "protected_resources": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "enum": [
+          "reference-purchase-api",
+          "reference-purchase-credential",
+          "masugate-action-api",
+          "masugate-governance-postgres"
+        ]
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/surface"}
+    }
+  },
+  "$defs": {
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "resource", "disposition", "detail"],
+      "properties": {
+        "id": {
+          "enum": [
+            "governed.spend.purchase",
+            "safe.read",
+            "safe.search",
+            "safe.browse",
+            "safe.draft",
+            "safe.local-compute",
+            "safe.network",
+            "blocked.native-consequential-tools",
+            "blocked.shell",
+            "blocked.child-process",
+            "blocked.browser-direct",
+            "blocked.purchase-api-direct",
+            "blocked.masugated-api-direct",
+            "blocked.provider-credentials",
+            "blocked.governance-database",
+            "blocked.protected-mounts",
+            "blocked.agent-mcp-extension",
+            "blocked.admin-configuration",
+            "unsupported.arbitrary-host-tools"
+          ]
+        },
+        "resource": {"type": "string", "minLength": 1},
+        "disposition": {
+          "enum": [
+            "governed",
+            "safely_available",
+            "intentionally_blocked",
+            "unsupported_unclaimed"
+          ]
+        },
+        "detail": {"type": "object"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"disposition": {"const": "governed"}}},
+          "then": {
+            "properties": {
+              "detail": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["tool", "route", "action"],
+                "properties": {
+                  "tool": {"const": "masugate_governed_action"},
+                  "route": {"const": "purchase"},
+                  "action": {"const": "spend.purchase"}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"disposition": {"const": "safely_available"}}},
+          "then": {
+            "properties": {
+              "detail": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["capability", "target"],
+                "properties": {
+                  "capability": {
+                    "enum": [
+                      "read",
+                      "search",
+                      "browse",
+                      "draft",
+                      "local-compute",
+                      "network"
+                    ]
+                  },
+                  "target": {"type": "string", "minLength": 1}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "disposition": {
+                "enum": ["intentionally_blocked", "unsupported_unclaimed"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "detail": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reason", "alternative"],
+                "properties": {
+                  "reason": {"type": "string", "minLength": 1},
+                  "alternative": {"type": "string", "minLength": 1}
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

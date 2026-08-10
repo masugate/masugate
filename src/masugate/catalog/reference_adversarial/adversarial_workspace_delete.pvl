@@ -1,0 +1,5 @@
+policy adversarial_workspace_delete on fs.delete {
+  deny missing_owned_claim when workspace.claimed(principal.id, args.path) == false;
+  escalate workspace_root_delete when args.path == "/workspace";
+  allow otherwise;
+}

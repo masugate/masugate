@@ -1,0 +1,117 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "masugate"
+version = "0.1.0"
+description = "MasuGate — policy-governed action runtime"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+# reference release is a reproducible reference release. These exact direct runtime
+# requirements are also recorded in the release lock and prevent a wheel from
+# silently accepting a mixed development installation.
+dependencies = [
+    "fastapi==0.139.0",
+    "httpx==0.28.1",
+    "lark==1.3.1",
+    "psycopg[binary,pool]==3.3.4",
+    "masugate-connector-sdk==0.1.0",
+    "uvicorn==0.51.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/MasuGateGovernance/MasuGate"
+Source = "https://github.com/MasuGateGovernance/MasuGate"
+Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+
+[project.scripts]
+masugated = "masugate.masugated.cli:main"
+masugate-connector-worker = "masugate.operations.worker:main"
+
+[project.optional-dependencies]
+dev = [
+    "build==1.5.0",
+    "hatchling==1.31.0",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "hypothesis==6.100.0",
+    "jsonschema==4.26.0",
+    "ruff==0.6.0",
+    "mypy==1.11.0",
+    "testcontainers[postgres]>=4.8",
+    "aiosqlite==0.21.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/masugate"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"protocol" = "masugate/protocol"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/LICENSE",
+    "/NOTICE",
+    "/README.md",
+    "/THIRD_PARTY_NOTICES.md",
+    "/pyproject.toml",
+    "/protocol",
+    "/src/masugate",
+]
+
+[tool.ruff]
+src = ["src", "tests"]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+enable_incomplete_feature = ["NewGenericSyntax"]
+explicit_package_bases = true
+files = [
+    "src", "tests", "operations/calendar/src", "operations/spend/src",
+    "connectors/google-calendar/src", "connectors/stripe-payment-intent/src", "connectors/filesystem/src",
+]
+mypy_path = [
+    "src", "clients/python/src", "connectors/sdk/src", "operations/calendar/src", "operations/spend/src", "operations/filesystem/src",
+    "connectors/google-calendar/src", "connectors/stripe-payment-intent/src", "connectors/filesystem/src",
+]
+
+# Third-party test-only libraries that ship no type stubs.
+[[tool.mypy.overrides]]
+module = ["docker", "testcontainers.*", "aiosqlite"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = [
+    "src", "clients/python/src", "connectors/sdk/src",
+    "operations/calendar/src", "operations/spend/src", "operations/filesystem/src",
+    "connectors/google-calendar/src", "connectors/stripe-payment-intent/src", "connectors/filesystem/src",
+]
+# The default run is the fast, deterministic SQLite suite. CI runs PostgreSQL,
+# live Docker, and performance tiers explicitly so each test belongs to one job.
+addopts = "-m 'not postgres and not gateway_recovery_crash_live and not containment_live and not connector_worker_containment_live and not reference_demo_demo_live and not release_verification_release_live and not google_calendar_live and not stripe_payment_intent_live and not performance'"
+markers = [
+    "backend_matrix: backend-parametrized test run once per selected backend",
+    "containment_live: test requires the Docker reference containment reference topology",
+    "connector_worker_containment_live: test requires the Docker connector worker worker topology",
+    "google_calendar_live: test requires the disposable Google Calendar OAuth sandbox",
+    "filesystem_live: test requires the exact dedicated Linux/ext4 filesystem profile",
+    "stripe_payment_intent_live: test requires disposable Stripe test-mode credentials",
+    "gateway_recovery_acceptance: durable gateway recovery native-approval acceptance on real PostgreSQL",
+    "gateway_recovery_crash_live: test requires the pinned Docker host gateway recovery crash matrix",
+    "reference_demo_demo_live: test requires the clean-artifact Docker reference demonstration demo stack",
+    "release_verification_release_live: test requires the complete clean-artifact Docker release verification release gate",
+    "performance: runner-sensitive PostgreSQL latency and throughput measurement",
+    "postgres: test requires a live PostgreSQL (via testcontainers or CI service)",
+]

@@ -1,0 +1,2 @@
+# PEP 561 marker: this source package ships inline type information when packaged
+# by its deployment-specific release process.

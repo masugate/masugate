@@ -1,0 +1,8 @@
+{
+  "reference": "art:fixture-payload-1",
+  "content_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "content_bytes": 15,
+  "media_type": "text/plain",
+  "classification": "reference-text",
+  "expires_at": "2026-07-26T13:00:00Z"
+}

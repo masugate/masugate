@@ -1,0 +1,61 @@
+{
+  "contract_version": "masugate.operation-pack.v1",
+  "id": "masugate.operation.calendar",
+  "version": "0.1.0",
+  "compatibility": {
+    "route_manifest": "masugate.governed-route-manifest.v2",
+    "connector_contract": "masugate.connector.v1"
+  },
+  "actions": [
+    {
+      "action": "calendar.event.cancel",
+      "input_schema": {
+        "type": "object",
+        "properties": {"event_ref": {"type": "string", "minLength": 9, "maxLength": 80}},
+        "required": ["event_ref"],
+        "additionalProperties": false
+      },
+      "public_result_schema": {
+        "type": "object",
+        "properties": {
+          "event_ref": {"type": "string", "maxLength": 80},
+          "status": {"type": "string", "maxLength": 9}
+        },
+        "required": ["event_ref", "status"],
+        "additionalProperties": false
+      },
+      "artifact_fields": [],
+      "owner_position": "protected-external",
+      "required_connector_capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+      "maturity": "reference-effect"
+    },
+    {
+      "action": "calendar.event.create",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string", "minLength": 1, "maxLength": 120},
+          "description": {"type": "string", "maxLength": 1024},
+          "start_at": {"type": "string", "minLength": 20, "maxLength": 64},
+          "end_at": {"type": "string", "minLength": 20, "maxLength": 64},
+          "timezone": {"type": "string", "minLength": 1, "maxLength": 64}
+        },
+        "required": ["title", "description", "start_at", "end_at", "timezone"],
+        "additionalProperties": false
+      },
+      "public_result_schema": {
+        "type": "object",
+        "properties": {
+          "event_ref": {"type": "string", "maxLength": 80},
+          "status": {"type": "string", "maxLength": 9}
+        },
+        "required": ["event_ref", "status"],
+        "additionalProperties": false
+      },
+      "artifact_fields": [],
+      "owner_position": "protected-external",
+      "required_connector_capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+      "maturity": "reference-effect"
+    }
+  ]
+}

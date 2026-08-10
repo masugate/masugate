@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/schemas/resolve-request.schema.json",
+  "title": "Pending resolution request",
+  "description": "A human approval or rejection submitted through masugated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["approved"],
+  "properties": {
+    "approved": {
+      "type": "boolean"
+    },
+    "evidence": {
+      "type": "object"
+    }
+  }
+}

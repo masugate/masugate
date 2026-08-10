@@ -1,0 +1,7 @@
+policy adversarial_send_message on send_message {
+  deny missing_communication_claim when comms.send_claimed(principal.id, request.operation_id, request.digest, args.channel, args.peer) == false;
+  deny peer_not_allowed when comms.peer_allowed(args.channel, args.peer) == false;
+  deny message_lifetime_cap when comms.message_count(args.channel, args.peer) >= 2;
+  escalate first_contact when comms.first_contact(args.channel, args.peer) == true;
+  allow otherwise;
+}

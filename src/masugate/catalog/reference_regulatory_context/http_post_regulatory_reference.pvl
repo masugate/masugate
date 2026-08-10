@@ -1,0 +1,7 @@
+policy http_post_regulatory_reference on http.post {
+  deny sanctioned_counterparty when certified.sanctions_counterparty_permitted == false;
+  deny position_limit_reached when certified.position_limit_permitted == false;
+  deny trade_execution_window_closed when certified.trade_execution_window_open == false;
+  deny export_destination_not_permitted when certified.export_destination_permitted == false;
+  allow otherwise;
+}

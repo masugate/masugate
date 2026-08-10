@@ -1,0 +1,19 @@
+{
+  "contract_version": "masugate.governed-route-manifest.v1",
+  "routes": [
+    {
+      "host_tool": "purchase",
+      "action": "spend.purchase",
+      "arguments": {
+        "amount_cents": "integer",
+        "merchant_id": "string",
+        "request_ref": "string"
+      },
+      "owner": {
+        "provider_id": "spend-v1",
+        "position": "protected-external",
+        "connector_id": "purchase-v1"
+      }
+    }
+  ]
+}

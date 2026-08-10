@@ -1,0 +1,69 @@
+{
+  "contract_version": "masugate.operation-pack.v1",
+  "id": "masugate.operation.filesystem",
+  "version": "0.1.0",
+  "compatibility": {
+    "route_manifest": "masugate.governed-route-manifest.v2",
+    "connector_contract": "masugate.connector.v1"
+  },
+  "actions": [
+    {
+      "action": "fs.delete",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "expected_current_digest": {"type": "string", "minLength": 64, "maxLength": 64},
+          "path": {"type": "string", "minLength": 12, "maxLength": 1024}
+        },
+        "required": ["expected_current_digest", "path"],
+        "additionalProperties": false
+      },
+      "public_result_schema": {
+        "type": "object",
+        "properties": {
+          "after_digest": {"type": "string", "maxLength": 64},
+          "before_digest": {"type": "string", "minLength": 64, "maxLength": 64},
+          "bytes": {"type": "integer", "minimum": 0, "maximum": 16384},
+          "logical_path": {"type": "string", "minLength": 12, "maxLength": 1024},
+          "quarantine_id": {"type": "string", "minLength": 3, "maxLength": 255},
+          "status": {"type": "string", "minLength": 1, "maxLength": 32}
+        },
+        "required": ["after_digest", "before_digest", "bytes", "logical_path", "quarantine_id", "status"],
+        "additionalProperties": false
+      },
+      "artifact_fields": [],
+      "owner_position": "protected-external",
+      "required_connector_capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+      "maturity": "reference-effect"
+    },
+    {
+      "action": "fs.write",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "content": {"type": "string", "minLength": 1, "maxLength": 16384},
+          "expected_prior_digest": {"type": "string", "maxLength": 64},
+          "path": {"type": "string", "minLength": 12, "maxLength": 1024}
+        },
+        "required": ["content", "expected_prior_digest", "path"],
+        "additionalProperties": false
+      },
+      "public_result_schema": {
+        "type": "object",
+        "properties": {
+          "after_digest": {"type": "string", "minLength": 64, "maxLength": 64},
+          "before_digest": {"type": "string", "maxLength": 64},
+          "bytes": {"type": "integer", "minimum": 1, "maximum": 16384},
+          "logical_path": {"type": "string", "minLength": 12, "maxLength": 1024},
+          "status": {"type": "string", "minLength": 1, "maxLength": 32}
+        },
+        "required": ["after_digest", "before_digest", "bytes", "logical_path", "status"],
+        "additionalProperties": false
+      },
+      "artifact_fields": ["content"],
+      "owner_position": "protected-external",
+      "required_connector_capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+      "maturity": "reference-effect"
+    }
+  ]
+}

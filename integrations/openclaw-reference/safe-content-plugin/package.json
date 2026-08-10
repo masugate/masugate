@@ -1,0 +1,20 @@
+{
+  "name": "@masugate/openclaw-reference-safe-content",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.16.0"
+  },
+  "peerDependencies": {
+    "openclaw": "2026.7.1"
+  },
+  "openclaw": {
+    "extensions": ["./index.mjs"],
+    "runtimeExtensions": ["./index.mjs"],
+    "compat": {
+      "pluginApi": "2026.7.1",
+      "minGatewayVersion": "2026.7.1"
+    }
+  }
+}

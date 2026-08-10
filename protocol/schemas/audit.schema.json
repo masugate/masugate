@@ -1,0 +1,847 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/schemas/audit.schema.json",
+  "title": "Governance audit record",
+  "description": "The certified request, policy decision, versioned view reads, protected operational state, and applied effect for one operation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "operation_id",
+    "status",
+    "request",
+    "policy",
+    "decision",
+    "view_reads",
+    "authorization_evaluations",
+    "terminal_serialization",
+    "effect",
+    "recorded_at"
+  ],
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "required": [
+            "resolution_plan",
+            "reservation_safety_certificate_digest",
+            "reservation_entitlement_digest"
+          ],
+          "properties": {
+            "resolution_plan": {"const": "reservation-proof"}
+          }
+        },
+        {
+          "required": ["resolution_plan"],
+          "properties": {
+            "resolution_plan": {"enum": ["revalidate", "scoped-hold"]},
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        },
+        {
+          "properties": {
+            "resolution_plan": false,
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        }
+      ]
+    },
+    {
+      "not": {
+        "required": ["human_resolution", "automatic_expiry"]
+      }
+    },
+    {
+      "if": {
+        "required": ["automatic_expiry"]
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "denied"},
+          "human_resolution": false,
+          "decision": {
+            "type": "object",
+            "properties": {
+              "effect": {"const": "deny"},
+              "rule_id": {"const": "approval.expired"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["decision"],
+        "properties": {
+          "decision": {
+            "type": "object",
+            "properties": {
+              "rule_id": {"const": "approval.expired"}
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["automatic_expiry"],
+        "properties": {
+          "human_resolution": false
+        }
+      }
+    }
+  ],
+  "properties": {
+    "operation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": ["committed", "denied", "pending", "in_progress", "outcome_unknown"]
+    },
+    "request": {
+      "$ref": "#/$defs/certified_request"
+    },
+    "policy": {
+      "$ref": "#/$defs/policy_receipt"
+    },
+    "entitlement": {
+      "$ref": "#/$defs/audit_entitlement"
+    },
+    "decision": {
+      "oneOf": [
+        {"$ref": "#/$defs/audit_decision"},
+        {"type": "null"}
+      ]
+    },
+    "view_reads": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/view_read"}
+    },
+    "authorization_evaluations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/authorization_evaluation"}
+    },
+    "terminal_serialization": {
+      "oneOf": [
+        {"$ref": "#/$defs/terminal_serialization"},
+        {"type": "null"}
+      ]
+    },
+    "human_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved", "evidence"],
+      "properties": {
+        "approved": {"type": "boolean"},
+        "actor_id": {"type": "string", "minLength": 1},
+        "evidence": {"type": "object"},
+        "resolved_at": {"type": "string", "format": "date-time"}
+      },
+      "oneOf": [
+        {"required": ["actor_id", "resolved_at"]},
+        {
+          "properties": {
+            "actor_id": false,
+            "resolved_at": false
+          }
+        }
+      ]
+    },
+    "automatic_expiry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expires_at", "reason"],
+      "properties": {
+        "expires_at": {"type": "string", "format": "date-time"},
+        "reason": {"const": "approval-window-expired"}
+      }
+    },
+    "protected_execution": {
+      "$ref": "#/$defs/protected_execution"
+    },
+    "resolution_plan": {
+      "enum": ["revalidate", "scoped-hold", "reservation-proof"]
+    },
+    "reservation_safety_certificate_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reservation_entitlement_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "effect": {
+      "oneOf": [
+        {"$ref": "#/$defs/applied_effect"},
+        {"type": "null"}
+      ]
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "oneOf": [
+    {
+      "title": "Committed receipt",
+      "properties": {
+        "status": {"const": "committed"},
+        "decision": {
+          "type": "object",
+          "properties": {
+            "effect": {"const": "allow"}
+          }
+        },
+        "terminal_serialization": {
+          "allOf": [
+            {"$ref": "#/$defs/terminal_serialization"},
+            {"properties": {"kind": {"const": "effect-commit"}}}
+          ]
+        },
+        "protected_execution": {
+          "allOf": [
+            {"$ref": "#/$defs/protected_execution"},
+            {"properties": {"status": {"const": "succeeded"}}}
+          ]
+        },
+        "effect": {"$ref": "#/$defs/applied_effect"}
+      }
+    },
+    {
+      "title": "Denied receipt",
+      "properties": {
+        "status": {"const": "denied"},
+        "decision": {
+          "type": "object",
+          "properties": {
+            "effect": {"const": "deny"}
+          }
+        },
+        "terminal_serialization": {
+          "allOf": [
+            {"$ref": "#/$defs/terminal_serialization"},
+            {"properties": {"kind": {"const": "denial-record"}}}
+          ]
+        },
+        "protected_execution": {
+          "allOf": [
+            {"$ref": "#/$defs/protected_execution"},
+            {"properties": {"status": {"const": "failed"}}}
+          ]
+        },
+        "effect": {"type": "null"}
+      }
+    },
+    {
+      "title": "Pending receipt",
+      "properties": {
+        "status": {"const": "pending"},
+        "decision": {
+          "type": "object",
+          "properties": {
+            "effect": {"const": "escalate"}
+          }
+        },
+        "protected_execution": false,
+        "terminal_serialization": {"type": "null"},
+        "effect": {"type": "null"}
+      }
+    },
+    {
+      "title": "Protected execution in progress receipt",
+      "properties": {
+        "status": {"const": "in_progress"},
+        "decision": {"type": "null"},
+        "protected_execution": {
+          "allOf": [
+            {"$ref": "#/$defs/protected_execution"},
+            {"properties": {"status": {"enum": ["intent", "executing"]}}}
+          ]
+        },
+        "terminal_serialization": {"type": "null"},
+        "effect": {"type": "null"},
+        "resolution_plan": false,
+        "reservation_safety_certificate_digest": false,
+        "reservation_entitlement_digest": false
+      }
+    },
+    {
+      "title": "Protected execution outcome unknown receipt",
+      "properties": {
+        "status": {"const": "outcome_unknown"},
+        "decision": {"type": "null"},
+        "protected_execution": {
+          "allOf": [
+            {"$ref": "#/$defs/protected_execution"},
+            {"properties": {"status": {"const": "outcome_unknown"}}}
+          ]
+        },
+        "terminal_serialization": {"type": "null"},
+        "effect": {"type": "null"},
+        "resolution_plan": false,
+        "reservation_safety_certificate_digest": false,
+        "reservation_entitlement_digest": false
+      }
+    }
+  ],
+  "$defs": {
+    "protected_execution_status": {
+      "enum": ["intent", "executing", "succeeded", "failed", "outcome_unknown"]
+    },
+    "protected_execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "status": {"const": "intent"},
+                "entitlement_state": {"const": "held"},
+                "dispatch_started": {"const": false},
+                "receipt": {"type": "null"}
+              }
+            },
+            {
+              "properties": {
+                "status": {"const": "executing"},
+                "entitlement_state": {"const": "held"}
+              }
+            },
+            {
+              "properties": {
+                "status": {"const": "succeeded"},
+                "entitlement_state": {"const": "consumed"},
+                "dispatch_started": {"const": true},
+                "lease": {"type": "null"},
+                "receipt": {
+                  "type": "object",
+                  "properties": {"outcome": {"const": "succeeded"}}
+                }
+              }
+            },
+            {
+              "properties": {
+                "status": {"const": "failed"},
+                "entitlement_state": {"const": "released"},
+                "lease": {"type": "null"}
+              },
+              "oneOf": [
+                {
+                  "properties": {
+                    "dispatch_started": {"const": false},
+                    "receipt": {"type": "null"}
+                  }
+                },
+                {
+                  "properties": {
+                    "dispatch_started": {"const": true},
+                    "receipt": {
+                      "type": "object",
+                      "properties": {"outcome": {"const": "failed"}}
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "properties": {
+                "status": {"const": "outcome_unknown"},
+                "entitlement_state": {"const": "quarantined"},
+                "dispatch_started": {"const": true}
+              }
+            }
+          ]
+        },
+        {
+          "if": {
+            "required": ["dispatch_started"],
+            "properties": {"dispatch_started": {"const": false}}
+          },
+          "then": {
+            "properties": {
+              "external_operation_id": {"type": "null"},
+              "receipt": {"type": "null"}
+            }
+          }
+        }
+      ],
+      "required": [
+        "execution_id",
+        "binding_digest",
+        "binding",
+        "binding_canonical_json",
+        "status",
+        "entitlement_state",
+        "dispatch_started",
+        "cancel_requested",
+        "external_operation_id",
+        "lease",
+        "last_fence_token",
+        "receipt",
+        "result",
+        "created_at",
+        "updated_at",
+        "events"
+      ],
+      "properties": {
+        "execution_id": {"type": "string", "pattern": "^px:[0-9a-f]{64}$"},
+        "binding_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "binding": {"$ref": "#/$defs/protected_execution_binding"},
+        "binding_canonical_json": {"type": "string", "minLength": 2},
+        "status": {"$ref": "#/$defs/protected_execution_status"},
+        "entitlement_state": {
+          "enum": ["held", "consumed", "released", "quarantined"]
+        },
+        "dispatch_started": {"type": "boolean"},
+        "cancel_requested": {"type": "boolean"},
+        "external_operation_id": {"type": ["string", "null"]},
+        "lease": {
+          "oneOf": [
+            {"$ref": "#/$defs/protected_execution_lease"},
+            {"type": "null"}
+          ]
+        },
+        "last_fence_token": {"type": "integer", "minimum": 0},
+        "receipt": {
+          "oneOf": [
+            {"$ref": "#/$defs/connector_evidence"},
+            {"type": "null"}
+          ]
+        },
+        "result": {"type": "object"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"},
+        "events": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/protected_execution_event"}
+        }
+      }
+    },
+    "protected_execution_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "action",
+        "arguments",
+        "idempotency_key",
+        "policies",
+        "provider_identity",
+        "coordination_domain_id",
+        "scopes",
+        "tool_call_id",
+        "connector_id",
+        "entitlement_id"
+      ],
+      "properties": {
+        "principal_id": {"type": "string", "minLength": 1},
+        "action": {"type": "string", "minLength": 1},
+        "arguments": {"type": "object"},
+        "idempotency_key": {"type": "string", "minLength": 1},
+        "policies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/protected_policy_binding"}
+        },
+        "provider_identity": {"$ref": "#/$defs/protected_provider_identity"},
+        "coordination_domain_id": {"type": "string", "minLength": 1},
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "tool_call_id": {"type": "string", "minLength": 1},
+        "connector_id": {"type": "string", "minLength": 1},
+        "entitlement_id": {"type": "string", "minLength": 1},
+        "authorization_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "protected_policy_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_version",
+        "policy_digest",
+        "bundle_id",
+        "bundle_version",
+        "bundle_digest"
+      ],
+      "properties": {
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string", "minLength": 1},
+        "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bundle_id": {"type": "string", "minLength": 1},
+        "bundle_version": {"type": "string", "minLength": 1},
+        "bundle_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "protected_provider_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "implementation_version", "configuration_version"],
+      "properties": {
+        "provider_id": {"type": "string", "minLength": 1},
+        "implementation_version": {"type": "string", "minLength": 1},
+        "configuration_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "protected_execution_lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "fence_token", "expires_at"],
+      "properties": {
+        "owner": {"type": "string", "minLength": 1},
+        "fence_token": {"type": "integer", "minimum": 1},
+        "expires_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "connector_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "connector_id",
+        "evidence_id",
+        "idempotency_key",
+        "external_operation_id",
+        "outcome",
+        "observed_at",
+        "payload"
+      ],
+      "properties": {
+        "connector_id": {"type": "string", "minLength": 1},
+        "evidence_id": {"type": "string", "minLength": 1},
+        "idempotency_key": {"type": "string", "minLength": 1},
+        "external_operation_id": {"type": ["string", "null"]},
+        "outcome": {"enum": ["succeeded", "failed", "unknown"]},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "payload": {"type": "object"}
+      }
+    },
+    "protected_execution_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "event_type",
+        "from_status",
+        "to_status",
+        "worker_id",
+        "fence_token",
+        "recorded_at",
+        "evidence"
+      ],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1},
+        "event_type": {"type": "string", "minLength": 1},
+        "from_status": {
+          "oneOf": [
+            {"$ref": "#/$defs/protected_execution_status"},
+            {"type": "null"}
+          ]
+        },
+        "to_status": {"$ref": "#/$defs/protected_execution_status"},
+        "worker_id": {"type": ["string", "null"]},
+        "fence_token": {"type": ["integer", "null"], "minimum": 1},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "evidence": {"type": "object"}
+      }
+    },
+    "scalar": {
+      "type": ["string", "integer", "boolean"]
+    },
+    "certified_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "idempotency_key",
+        "principal",
+        "action",
+        "args",
+        "timestamp"
+        ,"request_time"
+      ],
+      "properties": {
+        "idempotency_key": {"type": "string", "minLength": 1},
+        "principal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "attributes"],
+          "properties": {
+            "id": {"type": "string", "minLength": 1},
+            "attributes": {
+              "type": "object",
+              "additionalProperties": {"$ref": "#/$defs/scalar"}
+            }
+          }
+        },
+        "action": {"type": "string", "minLength": 1},
+        "args": {"type": "object"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "request_time": {"type": "string", "format": "date-time"},
+        "trace_id": {"type": ["string", "null"]},
+        "adapter_invocation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "protected_artifacts": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/protected_artifact_metadata"}
+        }
+      }
+    },
+    "protected_artifact_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "content_digest", "content_bytes", "media_type", "classification", "expires_at", "inspector_version"],
+      "properties": {
+        "reference": {"type": "string", "pattern": "^art:[A-Za-z0-9._:/-]+$"},
+        "content_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "content_bytes": {"type": "integer", "minimum": 0},
+        "media_type": {"type": "string", "minLength": 3, "maxLength": 128},
+        "classification": {"type": "string", "minLength": 1, "maxLength": 255},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "inspector_version": {"type": "string", "minLength": 1, "maxLength": 255}
+      }
+    },
+    "evaluated_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "policy_version"],
+      "properties": {
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string"}
+      }
+    },
+    "policy_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_declared_version",
+        "policy_runtime_version",
+        "policy_digest",
+        "bundle_id",
+        "bundle_version",
+        "bundle_digest",
+        "layer",
+        "mode"
+      ],
+      "properties": {
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_declared_version": {"type": "string", "minLength": 1},
+        "policy_runtime_version": {"type": "string", "minLength": 1},
+        "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bundle_id": {"type": "string", "minLength": 1},
+        "bundle_version": {"type": "string", "minLength": 1},
+        "bundle_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "layer": {
+          "enum": ["platform-safety", "deployment-regulatory", "owner"]
+        },
+        "mode": {"enum": ["mandatory", "configurable"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"layer": {"const": "owner"}}},
+          "then": {"properties": {"mode": {"const": "configurable"}}},
+          "else": {"properties": {"mode": {"const": "mandatory"}}}
+        }
+      ]
+    },
+    "policy_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_version",
+        "evaluated_policies",
+        "evaluated_policy_provenance"
+      ],
+      "properties": {
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string"},
+        "catalog": {"$ref": "#/$defs/policy_catalog"},
+        "evaluated_policies": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evaluated_policy"},
+          "uniqueItems": true
+        },
+        "evaluated_policy_provenance": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/policy_provenance"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "policy_catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_digest", "bundle_digest"],
+      "properties": {
+        "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bundle_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "audit_entitlement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entitlement_id", "authorization_digest"],
+      "properties": {
+        "entitlement_id": {"type": "string", "minLength": 1},
+        "authorization_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "audit_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect", "rule_id", "reason"],
+      "properties": {
+        "effect": {"enum": ["allow", "deny", "escalate"]},
+        "rule_id": {"type": "string", "minLength": 1},
+        "reason": {"type": "string"}
+      }
+    },
+    "view_read": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "function",
+        "arguments",
+        "value",
+        "scope",
+        "version",
+        "latency_ms"
+      ],
+      "properties": {
+        "function": {"type": "string", "minLength": 1},
+        "arguments": {"type": "array", "items": {}},
+        "value": {},
+        "scope": {"type": "string", "minLength": 1},
+        "version": {"type": "integer", "minimum": 0},
+        "latency_ms": {"type": "number", "minimum": 0}
+      }
+    },
+    "certified_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {"properties": {"stability": {"const": "admission-stable"}}},
+          "then": {
+            "properties": {
+              "stability_proof": {"const": "request-bound-immutable-v1"}
+            }
+          },
+          "else": {"properties": {"stability_proof": {"const": null}}}
+        }
+      ],
+      "required": [
+        "name",
+        "value",
+        "value_type",
+        "stability",
+        "stability_proof",
+        "source_id",
+        "source_version",
+        "contract_version",
+        "observed_at",
+        "certified_at",
+        "freshness_ttl_seconds",
+        "expires_at",
+        "phase"
+      ],
+      "properties": {
+        "name": {"type": "string", "pattern": "^certified\\.[A-Za-z_][A-Za-z0-9_]*$"},
+        "value": {},
+        "value_type": {"enum": ["Bool", "Int", "String", "Duration"]},
+        "stability": {"enum": ["admission-stable", "resolution-volatile"]},
+        "stability_proof": {
+          "type": ["string", "null"],
+          "enum": ["request-bound-immutable-v1", null]
+        },
+        "source_id": {"type": "string", "minLength": 1},
+        "source_version": {"type": "string", "minLength": 1},
+        "contract_version": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "certified_at": {"type": "string", "format": "date-time"},
+        "freshness_ttl_seconds": {"type": "integer", "minimum": 1},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "phase": {"enum": ["admission", "resolution"]}
+      }
+    },
+    "authorization_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "evaluated_at", "decision", "certified_inputs"],
+      "properties": {
+        "phase": {"enum": ["admission", "resolution"]},
+        "evaluated_at": {"type": "string", "format": "date-time"},
+        "decision": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["effect", "policy_id", "rule_id", "reason", "reads"],
+          "properties": {
+            "effect": {"enum": ["allow", "deny", "escalate"]},
+            "policy_id": {"type": "string", "minLength": 1},
+            "policy_version": {"type": "string"},
+            "rule_id": {"type": "string", "minLength": 1},
+            "reason": {"type": "string"},
+            "reads": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/view_read"}
+            },
+            "evaluated_policies": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/evaluated_policy"},
+              "uniqueItems": true
+            },
+            "policy_provenance": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/policy_provenance"},
+              "uniqueItems": true
+            }
+          }
+        },
+        "certified_inputs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/certified_input"}
+        }
+      }
+    },
+    "terminal_serialization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "authorization_basis", "provider_atomic", "recorded_at"],
+      "properties": {
+        "kind": {"enum": ["effect-commit", "denial-record"]},
+        "authorization_basis": {
+          "enum": [
+            "admission-evaluation",
+            "resolution-evaluation",
+            "preserved-admission-evaluation",
+            "mechanism-denial",
+            "legacy-unspecified"
+          ]
+        },
+        "provider_atomic": {"type": "boolean"},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "evaluation_phase": {"enum": ["admission", "resolution"]},
+        "evaluation_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "applied_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "args", "payload"],
+      "properties": {
+        "action": {"type": "string", "minLength": 1},
+        "args": {"type": "object"},
+        "payload": {"type": "object"}
+      }
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "plugins": {
+    "allow": ["masugate"],
+    "entries": {
+      "masugate": {
+        "enabled": true,
+        "config": {
+          "masugatedBaseUrl": "http://masugated:8000",
+          "agents": {
+            "buyer-alpha": "MASUGATE_BUYER_ALPHA_TOKEN"
+          },
+          "routes": {
+            "transfer": {
+              "action": "transfer",
+              "arguments": {
+                "receiver_id": "string",
+                "amount_cents": "integer"
+              },
+              "owner": {
+                "providerId": "masugate.postgres-ledger",
+                "position": "transactional"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tools": {
+    "allow": ["masugate_governed_action"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/artifact-response.schema.json",
+  "title": "MasuGate staged operation payload response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reference", "content_digest", "content_bytes", "media_type", "classification", "expires_at"],
+  "properties": {
+    "reference": {"type": "string", "pattern": "^art:[A-Za-z0-9._:/-]+$"},
+    "content_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "content_bytes": {"type": "integer", "minimum": 0},
+    "media_type": {"type": "string", "minLength": 3, "maxLength": 128},
+    "classification": {"type": "string", "minLength": 1, "maxLength": 255},
+    "expires_at": {"type": "string", "format": "date-time"}
+  }
+}

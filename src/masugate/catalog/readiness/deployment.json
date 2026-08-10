@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "profile": {
+    "id": "deployment.readiness",
+    "version": "1.0.0"
+  },
+  "mandatory_bundles": [
+    {
+      "id": "masugate.readiness.platform",
+      "version": "1.0.0",
+      "layer": "platform-safety",
+      "digest": "8434644bdc4fe291065ba38e35572b456cac4b52bdf22a0847c675d98626f3ce",
+      "source": "platform"
+    }
+  ]
+}

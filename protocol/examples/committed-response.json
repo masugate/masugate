@@ -1,0 +1,24 @@
+{
+  "operation_id": "11111111-1111-4111-8111-111111111111",
+  "status": "committed",
+  "decision": {
+    "effect": "allow",
+    "policy_id": "team_budget",
+    "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+    "rule_id": "otherwise",
+    "reason": "default allow",
+    "evaluated_policies": [
+      {
+        "policy_id": "team_budget",
+        "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664"
+      }
+    ]
+  },
+  "payload": {
+    "sender_id": "alice",
+    "receiver_id": "merchant",
+    "amount_cents": 2500
+  },
+  "audit_ref": "/v1/audit/11111111-1111-4111-8111-111111111111",
+  "replayed": false
+}

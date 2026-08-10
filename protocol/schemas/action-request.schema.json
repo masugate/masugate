@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/schemas/action-request.schema.json",
+  "title": "Governed action request",
+  "description": "A request to execute an action through masugated. Identity and admission time are derived by the server. Adapter callers may additionally supply a canonical invocation assertion that the server verifies against the authenticated request and durably binds to replay.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "args", "idempotency_key"],
+  "properties": {
+    "action": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "args": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "integer", "boolean"],
+        "minimum": -9007199254740991,
+        "maximum": 9007199254740991
+      }
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "trace_id": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "adapter_invocation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "description": "Canonical masugate.host-adapter.v1 invocation JSON. masugated verifies its principal, action, and arguments against the authenticated request and binds its SHA-256 digest to idempotent replay."
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.spend.reference",
+    "version": "1.0.0",
+    "layer": "owner",
+    "mode": "configurable"
+  },
+  "contracts": {
+    "principal_attributes": {
+      "team": "String"
+    },
+    "effects": [
+      {
+        "action": "spend.purchase",
+        "argument_types": {
+          "amount_cents": "Int",
+          "merchant_id": "String",
+          "request_ref": "String"
+        },
+        "owner": "spend",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "amount_cents",
+        "resolution": {
+          "kind": "provider",
+          "capability": "purchase-provider"
+        }
+      }
+    ],
+    "views": [
+      {
+        "name": "spend.available_cents",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "spend",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "purchase-provider"
+        }
+      }
+    ],
+    "certified_inputs": []
+  },
+  "policies": [
+    {
+      "id": "spend_budget_guard",
+      "version": "1.0.0",
+      "source": "spend_budget_guard.pvl",
+      "semantic_sha256": "5c072d7dbd39c0b274cfd9d078ed149536639c42c4ebefa802653b7693b16094",
+      "action": "spend.purchase",
+      "required_views": ["spend.available_cents"],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "reference-configuration",
+          "statement": "The 500-cent ask-first threshold is the bounded reference deployment configuration, not a universal spend policy."
+        },
+        {
+          "class": "external-validity",
+          "statement": "The policy governs the reference purchase connector; it does not establish merchant, tax, fraud, or legal validity."
+        }
+      ]
+    }
+  ]
+}

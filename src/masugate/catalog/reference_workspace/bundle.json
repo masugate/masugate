@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.file-workspace.reference",
+    "version": "1.0.0",
+    "layer": "deployment-regulatory",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {
+      "team": "String"
+    },
+    "effects": [
+      {
+        "action": "fs.write",
+        "argument_types": {
+          "content": "String",
+          "expected_prior_digest": "String",
+          "path": "String"
+        },
+        "owner": "file-workspace",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {
+          "kind": "provider",
+          "capability": "workspace-provider"
+        }
+      },
+      {
+        "action": "fs.delete",
+        "argument_types": {
+          "expected_current_digest": "String",
+          "path": "String"
+        },
+        "owner": "file-workspace",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {
+          "kind": "provider",
+          "capability": "workspace-provider"
+        }
+      }
+    ],
+    "views": [
+      {
+        "name": "workspace.claimed",
+        "argument_types": ["String", "String"],
+        "return_type": "Bool",
+        "owner": "file-workspace",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "workspace-provider"
+        }
+      }
+    ],
+    "certified_inputs": []
+  },
+  "policies": [
+    {
+      "id": "workspace_write_reference",
+      "version": "1.0.0",
+      "source": "workspace_write_reference.pvl",
+      "semantic_sha256": "482276e47a45c6ab3bdeadf89bc0e8231dc15c443f06270d906d22bc34f9c0d3",
+      "action": "fs.write",
+      "required_views": ["workspace.claimed"],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "effect-boundary",
+          "statement": "The provider governs a logical workspace namespace and protected dispatch identity; a host filesystem runner must still enforce no-follow path resolution before it executes an effect."
+        }
+      ]
+    },
+    {
+      "id": "workspace_delete_reference",
+      "version": "1.0.0",
+      "source": "workspace_delete_reference.pvl",
+      "semantic_sha256": "61fc448d346b3b5ba4372f693145539507f601da47541f6bfac0fc993fa18bbb",
+      "action": "fs.delete",
+      "required_views": ["workspace.claimed"],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "effect-boundary",
+          "statement": "The provider never follows host symlinks or executes a filesystem mutation inside its database transaction; a configured protected runner owns that external effect."
+        }
+      ]
+    }
+  ]
+}

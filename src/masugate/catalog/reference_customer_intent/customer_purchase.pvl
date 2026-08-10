@@ -1,0 +1,6 @@
+policy customer_purchase on spend.purchase {
+  deny owner_capability_denied when owner.action_permitted(principal.id, "spend.purchase") == false;
+  deny owner_target_denied when owner.target_permitted(principal.id, "spend.purchase", args.merchant_id) == false;
+  escalate owner_ask_first when owner.approval_required(principal.id, "spend.purchase") == true;
+  allow otherwise;
+}

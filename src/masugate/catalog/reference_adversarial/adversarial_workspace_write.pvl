@@ -1,0 +1,5 @@
+policy adversarial_workspace_write on fs.write {
+  deny missing_owned_claim when workspace.claimed(principal.id, args.path) == false;
+  escalate workspace_root_write when args.path == "/workspace";
+  allow otherwise;
+}

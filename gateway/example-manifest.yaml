@@ -1,0 +1,23 @@
+version: 1
+
+upstream:
+  command: node
+  args:
+    - ./merchant-server.mjs
+  env:
+    MERCHANT_API_KEY: ${MERCHANT_API_KEY}
+
+masugated:
+  base_url: http://127.0.0.1:8000
+  token_env: MASUGATED_TOKEN
+
+governed:
+  purchase:
+    action: transfer
+    stable_id: $.request_id
+    args:
+      receiver_id: $.merchant.id
+      amount_cents: $.amount_cents
+
+passthrough:
+  - catalog_search

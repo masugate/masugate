@@ -1,0 +1,26 @@
+FROM docker:27.5.1-cli-alpine3.21@sha256:851f91d241214e7c6db86513b270d58776379aacc5eb9c4a87e5b47115e3065c AS docker-cli
+
+FROM node:24.16.0-alpine@sha256:21f403ab171f2dc89bad4dd69d7721bfd15f084ccb46cdd225f31f2bc59b5c9a
+
+WORKDIR /opt/openclaw
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY containment/openclaw-contract/package.json containment/openclaw-contract/package-lock.json ./
+COPY artifacts/offline/npm/cache/ /opt/masugate-offline/npm-cache/
+RUN npm ci --offline --ignore-scripts --cache=/opt/masugate-offline/npm-cache
+
+# The plugin comes from the verified npm package, while the host contract
+# itself remains the same digest-locked OpenClaw dependency used by 2.4.
+COPY artifacts/npm/masugate-openclaw-*.tgz /artifacts/
+RUN mkdir masugate-plugin \
+ && tar -xzf /artifacts/masugate-openclaw-*.tgz --strip-components=1 -C masugate-plugin
+
+COPY containment/safe-content-plugin ./reference-safe-content-plugin
+COPY containment/openclaw-sandbox.json ./openclaw-sandbox.json
+COPY containment/gateway-entrypoint.mjs ./
+COPY containment/gateway-model-fixture.mjs ./
+COPY containment/gateway-live-session.mjs ./
+COPY containment/gateway-gateway_recovery-session.mjs ./
+COPY containment/gateway-gateway_recovery-approval.mjs ./
+COPY containment/gateway-release_verification-session.mjs ./
+
+CMD ["node", "gateway-entrypoint.mjs"]

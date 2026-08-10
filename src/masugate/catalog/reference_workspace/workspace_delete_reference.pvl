@@ -1,0 +1,4 @@
+policy workspace_delete_reference on fs.delete {
+  deny missing_owned_claim when workspace.claimed(principal.id, args.path) == false;
+  allow otherwise;
+}

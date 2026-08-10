@@ -1,0 +1,82 @@
+{
+  "name": "@masugate/openclaw",
+  "version": "0.1.0",
+  "description": "Trusted OpenClaw adapter for MasuGate-owned governed tools",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/MasuGateGovernance/MasuGate",
+  "bugs": "https://github.com/MasuGateGovernance/MasuGate/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MasuGateGovernance/MasuGate.git",
+    "directory": "integrations/openclaw"
+  },
+  "type": "module",
+  "engines": {
+    "node": "24.16.0"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/src/plugin.d.ts",
+      "import": "./dist/src/plugin.js"
+    },
+    "./profile/openclaw.json": "./profile/openclaw.json"
+  },
+  "files": [
+    "dist/src",
+    "profile",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "prebuild": "npm run build --workspace @masugate/client && npm run build --workspace @masugate/adapter-core",
+    "build": "npm run clean && tsc -p tsconfig.json && esbuild src/plugin.ts --bundle --platform=node --format=esm --target=node24 --external:openclaw/* --outfile=dist/src/plugin.js && node -e \"require('node:fs').copyFileSync('openclaw.plugin.json','dist/src/openclaw.plugin.json')\"",
+    "pretypecheck": "npm run build --workspace @masugate/client && npm run build --workspace @masugate/adapter-core",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pretest": "npm run build --workspace @masugate/client",
+    "test": "npm run build && node --test dist/test/*.test.js test/*.test.mjs",
+    "smoke:runtime": "npm run build && node scripts/smoke-installed-plugin.mjs",
+    "prepack": "npm run build && node scripts/prepare-bundled-runtime.mjs",
+    "postpack": "node scripts/clean-bundled-runtime.mjs"
+  },
+  "dependencies": {
+    "@masugate/adapter-core": "0.1.0",
+    "@masugate/client": "0.1.0",
+    "typebox": "1.3.3"
+  },
+  "bundledDependencies": [
+    "@masugate/adapter-core",
+    "@masugate/client",
+    "typebox"
+  ],
+  "peerDependencies": {
+    "openclaw": "2026.7.1"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "openclaw": "2026.7.1"
+  },
+  "openclaw": {
+    "extensions": [
+      "./src/plugin.ts"
+    ],
+    "runtimeExtensions": [
+      "./dist/src/plugin.js"
+    ],
+    "compat": {
+      "pluginApi": "2026.7.1",
+      "minGatewayVersion": "2026.7.1"
+    }
+  }
+}

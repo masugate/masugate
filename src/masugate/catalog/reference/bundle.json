@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.reference.safety",
+    "version": "1.0.0",
+    "layer": "platform-safety",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {},
+    "effects": [
+      {
+        "action": "reference.write",
+        "argument_types": {"target": "String"},
+        "owner": "reference",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      }
+    ],
+    "views": [
+      {
+        "name": "reference.allowed",
+        "argument_types": ["String"],
+        "return_type": "Bool",
+        "owner": "reference",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      }
+    ],
+    "certified_inputs": []
+  },
+  "policies": [
+    {
+      "id": "reference_guard",
+      "version": "1.0.0",
+      "source": "reference_guard.pvl",
+      "semantic_sha256": "eba7c1d54e097fa1553052cc42c863699d743055ca5b920ff3a2e0959445cbb3",
+      "action": "reference.write",
+      "required_views": ["reference.allowed"],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "task-correctness",
+          "statement": "Does not determine whether an allowed write is useful or semantically correct."
+        }
+      ]
+    }
+  ]
+}

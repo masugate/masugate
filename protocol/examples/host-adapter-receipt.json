@@ -1,0 +1,7 @@
+{
+  "kind": "receipt",
+  "locator": {"operation_id": "00000000-0000-4000-8000-100000000001"},
+  "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000001",
+  "status": "committed",
+  "marker": "scripted"
+}

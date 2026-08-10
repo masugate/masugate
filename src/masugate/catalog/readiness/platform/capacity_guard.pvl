@@ -1,0 +1,7 @@
+# Packaged core runtime-prime readiness fixture; not an application-host policy.
+policy readiness_capacity_guard on reference.write {
+  deny capacity_exhausted when
+    args.quantity > reference.remaining(args.target);
+  escalate large_write when args.quantity > 5;
+  allow otherwise;
+}

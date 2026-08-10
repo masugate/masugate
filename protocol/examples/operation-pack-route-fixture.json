@@ -1,0 +1,45 @@
+{
+  "contract_version": "masugate.operation-pack.v1",
+  "id": "masugate.operation.route-fixture",
+  "version": "1.0.0",
+  "compatibility": {
+    "route_manifest": "masugate.governed-route-manifest.v2",
+    "connector_contract": "masugate.connector.v1"
+  },
+  "actions": [
+    {
+      "action": "reference.notify",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "recipient": {"type": "string", "minLength": 3, "maxLength": 320},
+          "subject": {"type": "string", "maxLength": 256},
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "labels": {"type": "array", "items": {"type": "string", "maxLength": 48}, "maxItems": 8},
+              "priority": {"type": "integer", "minimum": 0, "maximum": 9}
+            },
+            "required": ["labels"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["recipient", "subject", "metadata"],
+        "additionalProperties": false
+      },
+      "public_result_schema": {
+        "type": "object",
+        "properties": {
+          "accepted": {"type": "boolean"},
+          "delivery_id": {"type": "string", "maxLength": 128}
+        },
+        "required": ["accepted", "delivery_id"],
+        "additionalProperties": false
+      },
+      "artifact_fields": [],
+      "owner_position": "protected-external",
+      "required_connector_capabilities": ["idempotent-dispatch", "status-query"],
+      "maturity": "reference-effect"
+    }
+  ]
+}

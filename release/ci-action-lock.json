@@ -1,0 +1,19 @@
+{
+  "schema_version": "masugate.ci-action-lock/v1",
+  "status": "public-source-activation",
+  "resolution": {
+    "method": "git ls-remote <repository> refs/tags/<resolved_tag>",
+    "source_host": "https://github.com",
+    "verification": "The returned tag object must equal the recorded lowercase 40-character commit before a workflow may be activated."
+  },
+  "actions": [
+    {"repository": "actions/checkout", "inherited_ref": "v4", "resolved_tag": "v4.2.2", "commit": "11bd71901bbe5b1630ceea73d27597364c9af683"},
+    {"repository": "actions/setup-python", "inherited_ref": "v5", "resolved_tag": "v5.6.0", "commit": "a26af69be951a213d495a4c3e4e4022e16d87065"},
+    {"repository": "actions/setup-node", "inherited_ref": "v4", "resolved_tag": "v4.4.0", "commit": "49933ea5288caeca8642d1e84afbd3f7d6820020"},
+    {"repository": "actions/upload-artifact", "inherited_ref": "v4", "resolved_tag": "v4.6.2", "commit": "ea165f8d65b6e75b540449e92b4886f43607fa02"}
+  ],
+  "activation": {
+    "requires": ["explicit public-source authorization", "fresh action-ref verification", "reviewed repository controls"],
+    "prohibits": ["mutable action references", "unreviewed action changes", "registry or container publication"]
+  }
+}

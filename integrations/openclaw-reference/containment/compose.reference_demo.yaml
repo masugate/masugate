@@ -1,0 +1,117 @@
+# reference demonstration reproducible-demo override.  The runner creates
+# MASUGATE_REFERENCE_DEMO_ARTIFACT_CONTEXT from the checksummed clean release output and
+# points each first-party image at that context.  The external bases remain
+# digest-pinned in the two Dockerfiles and compose.yaml.
+services:
+  openclaw-agent-sandbox-image:
+    image: ${MASUGATE_AGENT_SANDBOX_IMAGE:?set by scripts/run_reference_demos.py}
+    platform: linux/amd64
+    build:
+      context: ${MASUGATE_REFERENCE_DEMO_ARTIFACT_CONTEXT:?set by scripts/run_reference_demos.py}
+      dockerfile: containment/Dockerfile.reference_demo-agent-probe
+      network: none
+      pull: false
+
+  openclaw-gateway:
+    platform: linux/amd64
+    build:
+      context: ${MASUGATE_REFERENCE_DEMO_ARTIFACT_CONTEXT:?set by scripts/run_reference_demos.py}
+      dockerfile: containment/Dockerfile.reference_demo-gateway
+      network: none
+      pull: false
+    environment:
+      MASUGATE_AGENT_SANDBOX_IMAGE: ${MASUGATE_AGENT_SANDBOX_IMAGE:?set by scripts/run_reference_demos.py}
+      MASUGATE_REFERENCE_DEMO_NETWORK_PREFIX: ${MASUGATE_REFERENCE_DEMO_NETWORK_PREFIX:?set by scripts/run_reference_demos.py}
+      MASUGATE_GATEWAY_RECOVERY_LIVE: "1"
+      MASUGATE_REFERENCE_DEMO_DEMO: "1"
+      MASUGATE_BUYER_BETA_TOKEN: reference-demo-beta-token
+      MASUGATE_RESOLVER_TOKEN: gateway-recovery-resolver-token
+
+  safe-content:
+    platform: linux/amd64
+    build:
+      context: ${MASUGATE_REFERENCE_DEMO_ARTIFACT_CONTEXT:?set by scripts/run_reference_demos.py}
+      dockerfile: containment/Dockerfile.reference_demo-safe-content
+      network: none
+      pull: false
+
+  masugated:
+    platform: linux/amd64
+    build:
+      context: ${MASUGATE_REFERENCE_DEMO_ARTIFACT_CONTEXT:?set by scripts/run_reference_demos.py}
+      dockerfile: containment/Dockerfile.reference_demo-reference
+      network: none
+      pull: false
+    command: ["python", "-m", "masugate_openclaw_reference.gateway_recovery_live", "masugated"]
+    environment:
+      MASUGATE_REFERENCE_DEMO_DEMO: "1"
+      MASUGATE_BUYER_ALPHA_TOKEN: reference-containment-reference-token
+      MASUGATE_BUYER_BETA_TOKEN: reference-demo-beta-token
+      MASUGATE_RESOLVER_TOKEN: gateway-recovery-resolver-token
+      REFERENCE_PURCHASE_SERVICE_TOKEN: reference-containment-connector-token
+      MASUGATE_POSTGRES_DSN: postgresql://masugate:reference-containment-postgres@masugate-governance-postgres:5432/masugate
+      MASUGATE_GATEWAY_RECOVERY_STATE_ROOT: /gateway_recovery-state
+      MASUGATE_GATEWAY_RECOVERY_HAZARD: ${MASUGATE_GATEWAY_RECOVERY_HAZARD:-}
+      MASUGATE_REFERENCE_CREDENTIAL_MANIFEST_JSON: '{"connector_credential_fingerprint":"ca22ffe6801be8e3ac5ae59e5dc702d87888d6797f92ccc5e309d463a9602358","masugate_bearer_credential_fingerprints":["3c7e52ca39033070bb3f774980a3f2a88cb09e2a733794a012f89273a47c7248","3ca698f5cd94edc0f19843cf662e4acbfa2a3e8d0b6c2a45a7fcbf970139c869","ef0b2a7e6f68563271cbb3ec57246b0f30d8c0491875896c4d6bdc6227f13ce6"]}'
+    volumes:
+      - ${MASUGATE_REFERENCE_CONTAINMENT_STATE_ROOT:?set by scripts/run_reference_demos.py}:/gateway_recovery-state
+    depends_on:
+      masugate-governance-postgres:
+        condition: service_healthy
+      reference-purchase:
+        condition: service_healthy
+    networks:
+      - masugate-openclaw-reference-governance
+      - masugate-openclaw-reference-provider
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; request=urllib.request.Request('http://127.0.0.1:8000/v1/health', headers={'Authorization':'Bearer reference-containment-reference-token'}); urllib.request.urlopen(request, timeout=2)\""]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  reference-purchase:
+    platform: linux/amd64
+    build:
+      context: ${MASUGATE_REFERENCE_DEMO_ARTIFACT_CONTEXT:?set by scripts/run_reference_demos.py}
+      dockerfile: containment/Dockerfile.reference_demo-reference
+      network: none
+      pull: false
+    command: ["python", "-m", "masugate_openclaw_reference.gateway_recovery_live", "purchase"]
+    environment:
+      REFERENCE_PURCHASE_SERVICE_TOKEN: reference-containment-connector-token
+      MASUGATE_GATEWAY_RECOVERY_PURCHASE_STATE_ROOT: /reference-purchase-state
+      MASUGATE_REFERENCE_CREDENTIAL_MANIFEST_JSON: '{"connector_credential_fingerprint":"ca22ffe6801be8e3ac5ae59e5dc702d87888d6797f92ccc5e309d463a9602358","masugate_bearer_credential_fingerprints":["3c7e52ca39033070bb3f774980a3f2a88cb09e2a733794a012f89273a47c7248","3ca698f5cd94edc0f19843cf662e4acbfa2a3e8d0b6c2a45a7fcbf970139c869","ef0b2a7e6f68563271cbb3ec57246b0f30d8c0491875896c4d6bdc6227f13ce6"]}'
+    volumes:
+      - masugate-reference_demo-purchase-state:/reference-purchase-state
+    networks:
+      - masugate-openclaw-reference-provider
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; request=urllib.request.Request('http://127.0.0.1:8081/v1/health', headers={'Authorization':'Bearer reference-containment-connector-token'}); urllib.request.urlopen(request, timeout=2)\""]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  masugate-governance-postgres:
+    platform: linux/amd64
+
+  reference-purchase-connector:
+    platform: linux/amd64
+
+volumes:
+  masugate-reference_demo-purchase-state:
+
+# The reference containment profile deliberately names its networks so its fixed matrix can
+# inspect them. A 2.8b demo may run alongside that matrix (or another demo),
+# so retain the same internal topology but give every disposable project its
+# own DNS scope. Otherwise the shared ``masugate-governance-postgres`` service
+# name can resolve to a database from a different Compose project between two
+# short-lived PostgreSQL connections.
+networks:
+  masugate-openclaw-reference-agent:
+    name: ${MASUGATE_REFERENCE_DEMO_NETWORK_PREFIX:?set by scripts/run_reference_demos.py}-agent
+  masugate-openclaw-reference-safe-content:
+    name: ${MASUGATE_REFERENCE_DEMO_NETWORK_PREFIX:?set by scripts/run_reference_demos.py}-safe-content
+  masugate-openclaw-reference-governance:
+    name: ${MASUGATE_REFERENCE_DEMO_NETWORK_PREFIX:?set by scripts/run_reference_demos.py}-governance
+  masugate-openclaw-reference-provider:
+    name: ${MASUGATE_REFERENCE_DEMO_NETWORK_PREFIX:?set by scripts/run_reference_demos.py}-provider

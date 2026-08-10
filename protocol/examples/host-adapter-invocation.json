@@ -1,0 +1,10 @@
+{
+  "principal": {"id": "adapter:buyer"},
+  "source": {"namespace": "canary", "id": "call-1"},
+  "adapter": {
+    "id": "masugate.canary",
+    "contract_version": "masugate.host-adapter.v1",
+    "capabilities": ["pending-presentation", "receipt"]
+  },
+  "action": {"name": "canary.pending", "arguments": {"amount": 7}}
+}

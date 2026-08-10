@@ -1,0 +1,27 @@
+{
+  "event_id": "42",
+  "event_type": "pending.created",
+  "occurred_at": "2026-07-12T16:30:00Z",
+  "pending": {
+    "pending_id": "44444444-4444-4444-8444-444444444444",
+    "operation_id": "33333333-3333-4333-8333-333333333333",
+    "principal_id": "alice",
+    "action": "transfer",
+    "args": {
+      "receiver_id": "merchant",
+      "amount_cents": 5000
+    },
+    "created_at": "2026-07-12T16:30:00Z",
+    "resolution_plan": "reservation-proof",
+    "reservation_safety_certificate_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "reservation_entitlement_digest": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+    "decision": {
+      "effect": "escalate",
+      "policy_id": "approval_transfer",
+      "policy_version": "8f472bd8ee7f9b3f171e7eb1ed7ef893d7ea9449e03e98314a1c3f40ff570287",
+      "rule_id": "needs_approval",
+      "reason": "transfers above 4000 cents require human approval"
+    },
+    "audit_ref": "/v1/audit/33333333-3333-4333-8333-333333333333"
+  }
+}

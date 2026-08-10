@@ -1,0 +1,31 @@
+{
+  "contract_version": "masugate.connector-worker-containment.v1",
+  "connector_worker": {
+    "run_as_non_root": true,
+    "read_only_root_filesystem": true,
+    "drop_all_capabilities": true,
+    "no_new_privileges": true,
+    "network": {
+      "name": "connector-only",
+      "agent_gateway_reachable": false,
+      "allowed_destinations": []
+    },
+    "secret_mount": {
+      "target": "/run/masugate-secrets",
+      "read_only": true,
+      "allowlisted_files_only": true
+    },
+    "environment_allowlist": ["LANG", "TZ"],
+    "blocked_surfaces": [
+      "blocked.agent-network",
+      "blocked.database-administration-credential",
+      "blocked.docker-socket",
+      "blocked.gateway-network",
+      "blocked.host-root",
+      "blocked.http-proxy",
+      "blocked.https-proxy",
+      "blocked.no-proxy"
+    ],
+    "database_administration_credentials": false
+  }
+}

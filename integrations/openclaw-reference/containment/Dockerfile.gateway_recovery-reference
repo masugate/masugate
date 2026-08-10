@@ -1,0 +1,19 @@
+FROM python:3.12-alpine@sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df
+
+WORKDIR /opt/masugate
+
+# The deployment source is deliberately outside the reusable wheel.  The live
+# acceptance image installs the core runtime, then exposes this checked-in
+# deployment source explicitly through PYTHONPATH.
+COPY pyproject.toml README.md LICENSE ./
+COPY protocol ./protocol
+COPY src/masugate ./src/masugate
+COPY connectors/sdk/pyproject.toml connectors/sdk/README.md ./connectors/sdk/
+COPY connectors/sdk/src ./connectors/sdk/src
+COPY clients/python/pyproject.toml clients/python/README.md ./clients/python/
+COPY clients/python/src ./clients/python/src
+RUN pip install --no-cache-dir ./connectors/sdk . ./clients/python
+COPY src/masugate_openclaw_reference ./src/masugate_openclaw_reference
+ENV PYTHONPATH=/opt/masugate/src
+
+CMD ["python", "-m", "masugate_openclaw_reference.gateway_recovery_live", "masugated"]

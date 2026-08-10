@@ -1,0 +1,53 @@
+{
+  "name": "@masugate/mcp-gateway",
+  "version": "0.1.0",
+  "description": "MCP stdio proxy that routes declared effects through MasuGate",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/MasuGateGovernance/MasuGate",
+  "bugs": "https://github.com/MasuGateGovernance/MasuGate/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MasuGateGovernance/MasuGate.git",
+    "directory": "gateway"
+  },
+  "type": "module",
+  "bin": {
+    "masugate-mcp-gateway": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "example-manifest.yaml",
+    "npm-shrinkwrap.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "smoke:runtime": "npm run build && node scripts/smoke-installed-package.mjs",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@masugate/client": "0.1.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "jsonpath-plus": "10.3.0",
+    "yaml": "2.8.3",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.9",
+    "typescript": "5.9.2",
+    "vitest": "3.2.6"
+  }
+}

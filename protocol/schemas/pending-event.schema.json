@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/schemas/pending-event.schema.json",
+  "title": "Pending operation SSE event",
+  "description": "The JSON value in the data field of a pending.created Server-Sent Event. event_id is also emitted as the SSE id.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_id", "event_type", "occurred_at", "pending"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_type": {
+      "const": "pending.created"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pending": {
+      "$ref": "#/$defs/pending_operation"
+    }
+  },
+  "$defs": {
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect",
+        "policy_id",
+        "policy_version",
+        "rule_id",
+        "reason"
+      ],
+      "properties": {
+        "effect": {"const": "escalate"},
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string"},
+        "rule_id": {"type": "string", "minLength": 1},
+        "reason": {"type": "string"}
+      }
+    },
+    "pending_operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pending_id",
+        "operation_id",
+        "principal_id",
+        "action",
+        "args",
+        "created_at",
+        "decision",
+        "audit_ref"
+      ],
+      "properties": {
+        "pending_id": {"type": "string", "format": "uuid"},
+        "operation_id": {"type": "string", "format": "uuid"},
+        "principal_id": {"type": "string", "minLength": 1},
+        "action": {"type": "string", "minLength": 1},
+        "args": {"type": "object"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "resolution_plan": {
+          "enum": ["revalidate", "scoped-hold", "reservation-proof"]
+        },
+        "reservation_safety_certificate_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reservation_entitlement_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "decision": {"$ref": "#/$defs/decision"},
+        "audit_ref": {
+          "type": "string",
+          "pattern": "^/v1/audit/[^/]+$"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "resolution_plan",
+            "reservation_safety_certificate_digest",
+            "reservation_entitlement_digest"
+          ],
+          "properties": {
+            "resolution_plan": {"const": "reservation-proof"}
+          }
+        },
+        {
+          "required": ["resolution_plan"],
+          "properties": {
+            "resolution_plan": {"enum": ["revalidate", "scoped-hold"]},
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        },
+        {
+          "properties": {
+            "resolution_plan": false,
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        }
+      ]
+    }
+  }
+}

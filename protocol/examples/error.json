@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "unauthorized",
+    "message": "a valid Bearer credential is required"
+  }
+}

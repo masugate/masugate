@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node / TypeScript
+node_modules/
+.test-dist/
+coverage/
+*.tsbuildinfo
+
+# Local databases / prototype artifacts
+*.sqlite3
+*.db
+.masugate-local/
+
+# Rust / maturin (for the future masugate-policy-core crate)
+target/
+*.whl
+
+# OS / editor
+.DS_Store
+*.swp

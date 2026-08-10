@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/host-adapter-lifecycle.schema.json",
+  "title": "MasuGate host-adapter lifecycle envelopes",
+  "description": "Framework-neutral authoritative lifecycle, locator, cancellation, and receipt shapes.",
+  "$comment": "Semantic validation additionally requires every audit_ref to equal /v1/audit/<operation_id>; standard JSON Schema cannot express this cross-field equality.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "invocation", "result", "locator"],
+      "properties": {
+        "kind": {"const": "lifecycle"},
+        "invocation": {"$ref": "#/$defs/invocation"},
+        "result": {"$ref": "#/$defs/result"},
+        "locator": {"$ref": "#/$defs/locator"}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "result": {"properties": {"status": {"const": "pending"}}},
+            "locator": {"required": ["pending_id"]}
+          }
+        },
+        {
+          "properties": {
+            "result": {
+              "properties": {
+                "status": {"enum": ["committed", "denied", "in_progress", "outcome_unknown"]}
+              }
+            },
+            "locator": {"properties": {"pending_id": false}}
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "accepted"],
+      "properties": {
+        "kind": {"const": "cancellation"},
+        "locator": {"$ref": "#/$defs/pending_locator"},
+        "accepted": {"type": "boolean"},
+        "terminal_result": {"$ref": "#/$defs/terminal_result"}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "accepted": {"const": true},
+            "terminal_result": false
+          }
+        },
+        {
+          "properties": {"accepted": {"const": false}}
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "audit_ref", "status", "marker"],
+      "properties": {
+        "kind": {"const": "receipt"},
+        "locator": {"$ref": "#/$defs/locator"},
+        "audit_ref": {"type": "string", "pattern": "^/v1/audit/[^/]+$"},
+        "status": {"enum": ["committed", "denied", "pending", "in_progress", "outcome_unknown"]},
+        "marker": {"type": "string", "minLength": 1}
+      }
+    }
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9._:/-]+$"
+    },
+    "action_identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9._:/-]+$"
+    },
+    "argument_name": {
+      "type": "string",
+      "maxLength": 256,
+      "allOf": [
+        {"not": {"enum": ["__proto__", "prototype", "constructor"]}}
+      ],
+      "not": {
+        "pattern": "^(?:a_*d_*a_*p_*t_*e_*r_*c_*a_*p_*a_*b_*i_*l_*i_*t_*i_*e_*s|c_*o_*n_*t_*r_*a_*c_*t_*v_*e_*r_*s_*i_*o_*n|i_*n_*v_*o_*c_*a_*t_*i_*o_*n_*i_*d|s_*o_*u_*r_*c_*e_*i_*d|s_*o_*u_*r_*c_*e_*n_*a_*m_*e_*s_*p_*a_*c_*e)$"
+      },
+      "pattern": "^(?!(?:a_*d_*a_*p_*t_*e_*r|a_*d_*a_*p_*t_*e_*r_*i_*d|a_*g_*e_*n_*t_*i_*d|a_*u_*d_*i_*t_*r_*e_*f|a_*u_*t_*h_*o_*r_*i_*z_*a_*t_*i_*o_*n|c_*o_*n_*n_*e_*c_*t_*o_*r_*i_*d|c_*r_*e_*d_*e_*n_*t_*i_*a_*l|d_*e_*c_*i_*s_*i_*o_*n|e_*f_*f_*e_*c_*t|e_*x_*e_*c_*u_*t_*i_*o_*n_*p_*o_*s_*i_*t_*i_*o_*n|i_*d_*e_*m_*p_*o_*t_*e_*n_*c_*y_*k_*e_*y|l_*o_*c_*a_*t_*o_*r|o_*p_*e_*r_*a_*t_*i_*o_*n_*i_*d|p_*e_*n_*d_*i_*n_*g_*i_*d|p_*o_*l_*i_*c_*y_*i_*d|p_*o_*l_*i_*c_*y_*v_*e_*r_*s_*i_*o_*n|p_*r_*i_*n_*c_*i_*p_*a_*l|p_*r_*i_*n_*c_*i_*p_*a_*l_*i_*d|p_*r_*i_*n_*c_*i_*p_*a_*l_*r_*e_*f|p_*r_*o_*v_*i_*d_*e_*r_*i_*d|r_*e_*c_*e_*i_*p_*t|r_*e_*c_*e_*i_*p_*t_*r_*e_*f|r_*e_*p_*l_*a_*y_*e_*d|r_*e_*t_*r_*y|r_*e_*t_*r_*y_*a_*u_*t_*h_*o_*r_*i_*t_*y|r_*u_*l_*e_*i_*d|r_*u_*n_*i_*d|s_*e_*s_*s_*i_*o_*n_*i_*d|s_*e_*s_*s_*i_*o_*n_*k_*e_*y|s_*o_*u_*r_*c_*e_*i_*n_*v_*o_*c_*a_*t_*i_*o_*n|s_*t_*a_*b_*l_*e_*i_*d|t_*o_*k_*e_*n|t_*o_*o_*l_*c_*a_*l_*l_*i_*d|t_*r_*a_*c_*e_*i_*d)$)[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["principal", "source", "adapter", "action"],
+      "properties": {
+        "principal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id"],
+          "properties": {"id": {"$ref": "#/$defs/identifier"}}
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["namespace", "id"],
+          "properties": {
+            "namespace": {"$ref": "#/$defs/identifier"},
+            "id": {"$ref": "#/$defs/identifier"}
+          }
+        },
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "contract_version", "capabilities"],
+          "properties": {
+            "id": {"$ref": "#/$defs/identifier"},
+            "contract_version": {"const": "masugate.host-adapter.v1"},
+            "capabilities": {
+              "type": "array",
+              "items": {"enum": ["cancellation", "locator", "pending-presentation", "receipt"]},
+              "uniqueItems": true
+            }
+          }
+        },
+        "action": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "arguments"],
+          "properties": {
+            "name": {"$ref": "#/$defs/action_identifier"},
+            "arguments": {
+              "type": "object",
+              "propertyNames": {"$ref": "#/$defs/argument_name"},
+              "additionalProperties": {
+                "type": ["string", "integer", "boolean"],
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        }
+      }
+    },
+    "locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id"],
+      "properties": {
+        "operation_id": {"type": "string", "format": "uuid"},
+        "pending_id": {"type": "string", "format": "uuid"}
+      }
+    },
+    "pending_locator": {
+      "allOf": [
+        {"$ref": "#/$defs/locator"},
+        {"required": ["pending_id"]}
+      ]
+    },
+    "evaluated_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "policy_version"],
+      "properties": {
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect", "policy_id", "policy_version", "rule_id", "reason"],
+      "properties": {
+        "effect": {"enum": ["allow", "deny", "escalate"]},
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string"},
+        "rule_id": {"type": "string", "minLength": 1},
+        "reason": {"type": "string"},
+        "evaluated_policies": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/evaluated_policy"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "committed_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "status", "decision", "payload", "audit_ref", "replayed"],
+      "properties": {
+        "operation_id": {"type": "string", "format": "uuid"},
+        "status": {"const": "committed"},
+        "decision": {
+          "allOf": [
+            {"$ref": "#/$defs/decision"},
+            {"properties": {"effect": {"const": "allow"}}}
+          ]
+        },
+        "payload": {"type": "object"},
+        "audit_ref": {"type": "string", "pattern": "^/v1/audit/[^/]+$"},
+        "replayed": {"type": "boolean"}
+      }
+    },
+    "denied_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "status", "decision", "payload", "audit_ref", "replayed"],
+      "properties": {
+        "operation_id": {"type": "string", "format": "uuid"},
+        "status": {"const": "denied"},
+        "decision": {
+          "allOf": [
+            {"$ref": "#/$defs/decision"},
+            {"properties": {"effect": {"const": "deny"}}}
+          ]
+        },
+        "payload": {"type": "object"},
+        "audit_ref": {"type": "string", "pattern": "^/v1/audit/[^/]+$"},
+        "replayed": {"type": "boolean"}
+      }
+    },
+    "pending_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "pending_id", "status", "decision", "payload", "audit_ref", "replayed"],
+      "properties": {
+        "operation_id": {"type": "string", "format": "uuid"},
+        "pending_id": {"type": "string", "format": "uuid"},
+        "status": {"const": "pending"},
+        "decision": {
+          "allOf": [
+            {"$ref": "#/$defs/decision"},
+            {"properties": {"effect": {"const": "escalate"}}}
+          ]
+        },
+        "payload": {"type": "object"},
+        "resolution_plan": {"enum": ["revalidate", "scoped-hold", "reservation-proof"]},
+        "reservation_safety_certificate_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "reservation_entitlement_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "audit_ref": {"type": "string", "pattern": "^/v1/audit/[^/]+$"},
+        "replayed": {"type": "boolean"}
+      },
+      "oneOf": [
+        {
+          "required": ["resolution_plan", "reservation_safety_certificate_digest", "reservation_entitlement_digest"],
+          "properties": {"resolution_plan": {"const": "reservation-proof"}}
+        },
+        {
+          "required": ["resolution_plan"],
+          "properties": {
+            "resolution_plan": {"enum": ["revalidate", "scoped-hold"]},
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        },
+        {
+          "properties": {
+            "resolution_plan": false,
+            "reservation_safety_certificate_digest": false,
+            "reservation_entitlement_digest": false
+          }
+        }
+      ]
+    },
+    "operational_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation_id", "status", "decision", "payload", "audit_ref", "replayed"],
+      "properties": {
+        "operation_id": {"type": "string", "format": "uuid"},
+        "status": {"enum": ["in_progress", "outcome_unknown"]},
+        "decision": {"type": "null"},
+        "payload": {"type": "object"},
+        "audit_ref": {"type": "string", "pattern": "^/v1/audit/[^/]+$"},
+        "replayed": {"type": "boolean"}
+      }
+    },
+    "terminal_result": {
+      "oneOf": [
+        {"$ref": "#/$defs/committed_result"},
+        {"$ref": "#/$defs/denied_result"}
+      ]
+    },
+    "result": {
+      "oneOf": [
+        {"$ref": "#/$defs/committed_result"},
+        {"$ref": "#/$defs/denied_result"},
+        {"$ref": "#/$defs/pending_result"},
+        {"$ref": "#/$defs/operational_result"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "masugate-agent-framework"
+version = "0.1.0"
+description = "Exact-artifact Microsoft Agent Framework replacement-only adapter for MasuGate"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "agent-framework-core==1.12.0",
+    "masugate-adapter-core>=0.1,<1",
+]
+
+[project.urls]
+Homepage = "https://github.com/MasuGateGovernance/MasuGate"
+Source = "https://github.com/MasuGateGovernance/MasuGate"
+Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/masugate_agent_framework"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/README.md",
+    "/pyproject.toml",
+    "/requirements.txt",
+    "/src/masugate_agent_framework",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+src = ["src", "tests"]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src/masugate_agent_framework"]
+mypy_path = ["../python/src", "../../clients/python/src"]

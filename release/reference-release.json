@@ -1,0 +1,242 @@
+{
+  "schema_version": "masugate.reference-release/v1",
+  "release_id": "masugate-openclaw-reference/0.1.0",
+  "channel": "research-preview",
+  "runtime_target": {
+    "os": "linux",
+    "architecture": "amd64",
+    "python_abi": "cp312"
+  },
+  "artifacts": {
+    "platform": {
+      "distribution": "masugate",
+      "version": "0.1.0",
+      "entry_point": "masugated",
+      "protocol_contract": "masugate.host-adapter.v1",
+      "connector_sdk_dependency": "masugate-connector-sdk==0.1.0"
+    },
+    "connector_sdk": {
+      "distribution": "masugate-connector-sdk",
+      "version": "0.1.0"
+    },
+    "python_client": {
+      "distribution": "masugate-client",
+      "version": "0.1.0"
+    },
+    "adapter_core": {
+      "distribution": "masugate-adapter-core",
+      "version": "0.1.0"
+    },
+    "langchain_adapter": {
+      "distribution": "masugate-langchain",
+      "version": "0.1.0"
+    },
+    "agent_framework_adapter": {
+      "distribution": "masugate-agent-framework",
+      "version": "0.1.0"
+    },
+    "crewai_adapter": {
+      "distribution": "masugate-crewai",
+      "version": "0.1.0"
+    },
+    "google_calendar_connector": {
+      "distribution": "masugate-connector-google-calendar",
+      "version": "0.1.0"
+    },
+    "stripe_payment_intent_connector": {
+      "distribution": "masugate-connector-stripe-payment-intent",
+      "version": "0.1.0"
+    },
+    "filesystem_connector": {
+      "distribution": "masugate-connector-filesystem",
+      "version": "0.1.0"
+    },
+    "calendar_operation": {
+      "distribution": "masugate-operation-calendar",
+      "version": "0.1.0"
+    },
+    "spend_operation": {
+      "distribution": "masugate-operation-spend",
+      "version": "0.1.0"
+    },
+    "filesystem_operation": {
+      "distribution": "masugate-operation-filesystem",
+      "version": "0.1.0"
+    },
+    "typescript_client": {
+      "package": "@masugate/client",
+      "version": "0.1.0"
+    },
+    "typescript_adapter_core": {
+      "package": "@masugate/adapter-core",
+      "version": "0.1.0",
+      "client_dependency": "^0.1.0"
+    },
+    "mcp_gateway": {
+      "package": "@masugate/mcp-gateway",
+      "version": "0.1.0",
+      "client_dependency": "0.1.0"
+    },
+    "openclaw_adapter": {
+      "package": "@masugate/openclaw",
+      "version": "0.1.0",
+      "client_dependency": "0.1.0",
+      "adapter_core_dependency": "0.1.0",
+      "bundled_dependencies": [
+        "@masugate/adapter-core",
+        "@masugate/client",
+        "typebox"
+      ],
+      "openclaw_peer": "2026.7.1"
+    },
+    "reference_deployment": {
+      "distribution": "masugate-openclaw-reference",
+      "version": "0.1.0",
+      "platform_dependency": "masugate==0.1.0",
+      "python_client_dependency": "masugate-client==0.1.0",
+      "schema": {
+        "id": "masugate-openclaw-reference",
+        "version": 1,
+        "boundary": "clean-install-only",
+        "metadata_table": "masugate_release_metadata"
+      }
+    }
+  },
+  "reference_demo_spend_authorization": {
+    "configuration": {
+      "approval_threshold_cents": 500,
+      "approval_timeout_seconds": 600,
+      "budget_limit_cents": 10000,
+      "scope_derivation": "masugate.spend.reference.scopes.v1"
+    },
+    "configuration_digest": "ef3ed59d53a0818b903231be46ae791ad63e909b17fe38fe95d0b4f4441fa423",
+    "policy": {
+      "bundle_digest": "04062dec66e932401fb5913dcaab0208218d38eb30e00f32873081a029b7bd5d",
+      "bundle_id": "masugate.spend.reference",
+      "bundle_version": "1.0.0",
+      "layer": "owner",
+      "mode": "configurable",
+      "policy_declared_version": "1.0.0",
+      "policy_digest": "5c072d7dbd39c0b274cfd9d078ed149536639c42c4ebefa802653b7693b16094",
+      "policy_id": "spend_budget_guard",
+      "policy_runtime_version": "5c072d7dbd39c0b2"
+    }
+  },
+  "catalogs": [
+    "masugate.adversarial.reference@1.0.0",
+    "masugate.customer-intent.reference@1.0.0",
+    "masugate.communications.reference@1.0.0",
+    "masugate.operational-limits.reference@1.0.0",
+    "masugate.privacy-context.reference@1.0.0",
+    "masugate.regulatory-context.reference@1.0.0",
+    "masugate.spend.reference@1.0.0",
+    "masugate.file-workspace.reference@1.0.0"
+  ],
+  "provider_modules": [
+    {
+      "id": "masugate.spend.reference",
+      "implementation_version": "masugate.spend.reference-v1"
+    },
+    {
+      "id": "masugate.file-workspace",
+      "implementation_version": "masugate.file-workspace-claims-v5"
+    },
+    {
+      "id": "masugate.communications",
+      "implementation_version": "masugate.communications-v7"
+    },
+    {
+      "id": "masugate.policy-approval-state",
+      "implementation_version": "masugate.policy-approval-state-v1"
+    },
+    {
+      "id": "masugate.operational-limits",
+      "implementation_version": "masugate.operational-limits-v1"
+    },
+    {
+      "id": "masugate.certified-context",
+      "implementation_version": "masugate.certified-context-v1"
+    },
+    {
+      "id": "masugate.privacy-context",
+      "implementation_version": "masugate.privacy-context-v1"
+    },
+    {
+      "id": "masugate.regulatory-context",
+      "implementation_version": "masugate.regulatory-context-v1"
+    },
+    {
+      "id": "masugate.customer-intent",
+      "implementation_version": "masugate.customer-intent-v1"
+    }
+  ],
+  "sandbox_profile": {
+    "containment_manifest": "integrations/openclaw-reference/containment/manifest.json",
+    "profile": "integrations/openclaw-reference/containment/profile.json"
+  },
+  "container_images": {
+    "openclaw": "ghcr.io/openclaw/openclaw@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c",
+    "node_24_16_0_alpine": "node:24.16.0-alpine@sha256:21f403ab171f2dc89bad4dd69d7721bfd15f084ccb46cdd225f31f2bc59b5c9a",
+    "python_3_12_alpine": "python:3.12-alpine@sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df",
+    "nginx_1_27_5_alpine": "nginx:1.27.5-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+    "postgres_17_5_alpine": "postgres:17.5-alpine@sha256:6567bca8d7bc8c82c5922425a0baee57be8402df92bae5eacad5f01ae9544daa",
+    "alpine_3_21": "alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d",
+    "python_3_12_11_slim_bookworm": "python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7",
+    "docker_27_5_1_cli_alpine_3_21": "docker:27.5.1-cli-alpine3.21@sha256:851f91d241214e7c6db86513b270d58776379aacc5eb9c4a87e5b47115e3065c"
+  },
+  "container_artifact": {
+    "archive": "masugate-reference-images.tar",
+    "images": [
+      {
+        "role": "agent-sandbox",
+        "dockerfile": "Dockerfile.reference_demo-agent-probe",
+        "compose_services": [
+          "openclaw-agent-sandbox-image"
+        ]
+      },
+      {
+        "role": "gateway",
+        "dockerfile": "Dockerfile.reference_demo-gateway",
+        "compose_services": [
+          "openclaw-gateway"
+        ]
+      },
+      {
+        "role": "safe-content",
+        "dockerfile": "Dockerfile.reference_demo-safe-content",
+        "compose_services": [
+          "safe-content"
+        ]
+      },
+      {
+        "role": "reference",
+        "dockerfile": "Dockerfile.reference_demo-reference",
+        "compose_services": [
+          "masugated",
+          "reference-purchase"
+        ]
+      }
+    ]
+  },
+  "locks": {
+    "python": "release/requirements/pylock.masugate-platform.toml",
+    "npm": "package-lock.json",
+    "gateway_shrinkwrap": "gateway/npm-shrinkwrap.json",
+    "openclaw_contract": "integrations/openclaw-contract/package-lock.json",
+    "npm_clean_consumer": "release/npm-clean-consumer-lock.json"
+  },
+  "package_catalog": "release/package-catalog.json",
+  "provenance": {
+    "generator": "scripts/build-reference-release.py",
+    "source_revision": "recorded-at-build-or-supplied-origin",
+    "staging_realization_revision": "recorded-at-build",
+    "checksums": "SHA-256",
+    "sbom": "CycloneDX 1.5 JSON",
+    "sbom_schema": "release/schemas/cyclonedx/bom-1.5.schema.json",
+    "sbom_schema_sha256": "067f7824b08653839ea050ae9e09ca48375eadc2652b0e2a299476e7db90335b"
+  },
+  "rollback": {
+    "database": "No rollback or in-place migration is supported. Stop the deployment and restore a pre-release backup; a different or unmarked database is refused before traffic.",
+    "artifacts": "Return every platform, client, adapter, and reference artifact to the prior manifest as one set. Do not mix versions across a retained database."
+  }
+}

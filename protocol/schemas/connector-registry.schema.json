@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/connector-registry.schema.json",
+  "title": "MasuGate trusted connector registry",
+  "description": "Server-only registry used by masugated startup to bind a route to one installed connector identity.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "connectors"],
+  "properties": {
+    "contract_version": {"const": "masugate.connector-registry.v2"},
+    "connectors": {"type": "array", "items": {"$ref": "#/$defs/connector"}}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:/-]+$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "connector": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "package_id", "package_version", "entry_point", "sdk_contract_version", "implementation_digest", "configuration_digest", "credential_refs", "allowed_destinations", "capabilities", "capability_profile", "maturity"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/identifier"},
+        "package_id": {"$ref": "#/$defs/identifier"}, "package_version": {"$ref": "#/$defs/identifier"},
+        "entry_point": {"$ref": "#/$defs/identifier"}, "sdk_contract_version": {"const": "masugate.connector-sdk.v1"},
+        "implementation_digest": {"$ref": "#/$defs/digest"}, "configuration_digest": {"$ref": "#/$defs/digest"},
+        "credential_refs": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "allowed_destinations": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "capabilities": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "capability_profile": {
+          "type": "object", "additionalProperties": false,
+          "required": ["idempotent_dispatch", "status_query", "cancellation", "fencing", "max_payload_bytes", "max_result_bytes", "ambiguity_handling"],
+          "properties": {
+            "idempotent_dispatch": {"type": "boolean"}, "status_query": {"type": "boolean"}, "cancellation": {"type": "boolean"}, "fencing": {"type": "boolean"},
+            "max_payload_bytes": {"type": "integer", "minimum": 1}, "max_result_bytes": {"type": "integer", "minimum": 1},
+            "ambiguity_handling": {"enum": ["status-query", "quarantine"]}
+          }
+        },
+        "maturity": {"enum": ["reference-effect", "production-profile"]}
+      }
+    }
+  }
+}

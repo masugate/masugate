@@ -1,0 +1,254 @@
+{
+  "operation_id": "11111111-1111-4111-8111-111111111111",
+  "status": "committed",
+  "request": {
+    "idempotency_key": "mcp:req-7:attempt-1",
+    "principal": {
+      "id": "alice",
+      "attributes": {
+        "team": "research"
+      }
+    },
+    "action": "transfer",
+    "args": {
+      "receiver_id": "merchant",
+      "amount_cents": 2500
+    },
+    "timestamp": "2026-07-12T16:29:59.812Z",
+    "request_time": "2026-07-12T16:29:59.812Z",
+    "trace_id": "trace-2026-07-12-0007"
+  },
+  "policy": {
+    "policy_id": "team_budget",
+    "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+    "catalog": {
+      "policy_digest": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+      "bundle_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    "evaluated_policies": [
+      {
+        "policy_id": "team_budget",
+        "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664"
+      }
+    ],
+    "evaluated_policy_provenance": [
+      {
+        "policy_id": "team_budget",
+        "policy_declared_version": "1.0.0",
+        "policy_runtime_version": "f72bfbef3d3570f",
+        "policy_digest": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+        "bundle_id": "masugate.reference.safety",
+        "bundle_version": "1.0.0",
+        "bundle_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "layer": "platform-safety",
+        "mode": "mandatory"
+      }
+    ]
+  },
+  "entitlement": {
+    "entitlement_id": "entitlement:audit-tool:purchase",
+    "authorization_digest": "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
+  },
+  "decision": {
+    "effect": "allow",
+    "rule_id": "otherwise",
+    "reason": "default allow"
+  },
+  "view_reads": [
+    {
+      "function": "ledger.available_team_budget",
+      "arguments": [
+        "research",
+        86400
+      ],
+      "value": 10000,
+      "scope": "team-budget:research",
+      "version": 12,
+      "latency_ms": 0.73
+    }
+  ],
+  "authorization_evaluations": [
+    {
+      "phase": "admission",
+      "evaluated_at": "2026-07-12T16:30:00Z",
+      "decision": {
+        "effect": "allow",
+        "policy_id": "team_budget",
+        "rule_id": "otherwise",
+        "reason": "default allow",
+        "reads": [],
+        "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+        "evaluated_policies": [
+          {
+            "policy_id": "team_budget",
+            "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664"
+          }
+        ],
+        "policy_provenance": [
+          {
+            "policy_id": "team_budget",
+            "policy_declared_version": "1.0.0",
+            "policy_runtime_version": "f72bfbef3d3570f",
+            "policy_digest": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+            "bundle_id": "masugate.reference.safety",
+            "bundle_version": "1.0.0",
+            "bundle_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "layer": "platform-safety",
+            "mode": "mandatory"
+          }
+        ]
+      },
+      "certified_inputs": []
+    }
+  ],
+  "terminal_serialization": {
+    "kind": "effect-commit",
+    "authorization_basis": "preserved-admission-evaluation",
+    "provider_atomic": true,
+    "recorded_at": "2026-07-12T16:30:00Z",
+    "evaluation_phase": "admission",
+    "evaluation_at": "2026-07-12T16:30:00Z"
+  },
+  "resolution_plan": "reservation-proof",
+  "reservation_safety_certificate_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "reservation_entitlement_digest": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+  "protected_execution": {
+    "execution_id": "px:4350457a5ae2557503149ddfa1e57e7d53218ed3dcb2e7c05a4478d3531aaf9f",
+    "binding_digest": "4350457a5ae2557503149ddfa1e57e7d53218ed3dcb2e7c05a4478d3531aaf9f",
+    "binding": {
+      "action": "transfer",
+      "arguments": {
+        "receiver_id": "merchant",
+        "amount_cents": 2500
+      },
+      "connector_id": "reference-purchase-v1",
+      "coordination_domain_id": "reference-domain",
+      "entitlement_id": "entitlement:audit-tool:purchase",
+      "idempotency_key": "mcp:req-7:attempt-1",
+      "policies": [
+        {
+          "bundle_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "bundle_id": "masugate.reference.safety",
+          "bundle_version": "1.0.0",
+          "policy_digest": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+          "policy_id": "team_budget",
+          "policy_version": "1.0.0"
+        }
+      ],
+      "principal_id": "alice",
+      "provider_identity": {
+        "configuration_version": "reference-purchase-config-v1",
+        "implementation_version": "reference-purchase-v1",
+        "provider_id": "masugate.reference.purchase"
+      },
+      "scopes": [
+        "team-budget:research"
+      ],
+      "tool_call_id": "trace-2026-07-12-0007",
+      "authorization_digest": "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
+    },
+    "binding_canonical_json": "{\"action\":\"transfer\",\"arguments\":{\"amount_cents\":2500,\"receiver_id\":\"merchant\"},\"authorization_digest\":\"c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00\",\"connector_id\":\"reference-purchase-v1\",\"coordination_domain_id\":\"reference-domain\",\"entitlement_id\":\"entitlement:audit-tool:purchase\",\"idempotency_key\":\"mcp:req-7:attempt-1\",\"policies\":[{\"bundle_digest\":\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"bundle_id\":\"masugate.reference.safety\",\"bundle_version\":\"1.0.0\",\"policy_digest\":\"f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664\",\"policy_id\":\"team_budget\",\"policy_version\":\"1.0.0\"}],\"principal_id\":\"alice\",\"provider_identity\":{\"configuration_version\":\"reference-purchase-config-v1\",\"implementation_version\":\"reference-purchase-v1\",\"provider_id\":\"masugate.reference.purchase\"},\"scopes\":[\"team-budget:research\"],\"tool_call_id\":\"trace-2026-07-12-0007\"}",
+    "status": "succeeded",
+    "entitlement_state": "consumed",
+    "dispatch_started": true,
+    "cancel_requested": false,
+    "external_operation_id": "remote:1",
+    "lease": null,
+    "last_fence_token": 1,
+    "receipt": {
+      "connector_id": "reference-purchase-v1",
+      "evidence_id": "receipt:1:succeeded",
+      "idempotency_key": "masugate:4350457a5ae2557503149ddfa1e57e7d53218ed3dcb2e7c05a4478d3531aaf9f",
+      "external_operation_id": "remote:1",
+      "outcome": "succeeded",
+      "observed_at": "2026-07-13T12:01:00Z",
+      "payload": {
+        "outcome": "succeeded",
+        "reference": "1"
+      }
+    },
+    "result": {
+      "outcome": "succeeded",
+      "reference": "1"
+    },
+    "created_at": "2026-07-13T12:00:00.001Z",
+    "updated_at": "2026-07-13T12:00:00.005Z",
+    "events": [
+      {
+        "sequence": 1,
+        "event_type": "intent-persisted",
+        "from_status": null,
+        "to_status": "intent",
+        "worker_id": null,
+        "fence_token": null,
+        "recorded_at": "2026-07-13T12:00:00.001Z",
+        "evidence": {
+          "binding_digest": "4350457a5ae2557503149ddfa1e57e7d53218ed3dcb2e7c05a4478d3531aaf9f",
+          "entitlement_id": "entitlement:audit-tool:purchase"
+        }
+      },
+      {
+        "sequence": 2,
+        "event_type": "dispatch-lease-claimed",
+        "from_status": "intent",
+        "to_status": "executing",
+        "worker_id": "worker-1",
+        "fence_token": 1,
+        "recorded_at": "2026-07-13T12:00:00.002Z",
+        "evidence": {}
+      },
+      {
+        "sequence": 3,
+        "event_type": "dispatch-started",
+        "from_status": "executing",
+        "to_status": "executing",
+        "worker_id": "worker-1",
+        "fence_token": 1,
+        "recorded_at": "2026-07-13T12:00:00.003Z",
+        "evidence": {}
+      },
+      {
+        "sequence": 4,
+        "event_type": "connector-receipt-recorded",
+        "from_status": "executing",
+        "to_status": "executing",
+        "worker_id": "worker-1",
+        "fence_token": 1,
+        "recorded_at": "2026-07-13T12:00:00.004Z",
+        "evidence": {
+          "connector_evidence_id": "receipt:1:succeeded",
+          "connector_observed_at": "2026-07-13T12:01:00Z",
+          "external_operation_id": "remote:1",
+          "outcome": "succeeded"
+        }
+      },
+      {
+        "sequence": 5,
+        "event_type": "terminal-position-recorded",
+        "from_status": "executing",
+        "to_status": "succeeded",
+        "worker_id": "worker-1",
+        "fence_token": 1,
+        "recorded_at": "2026-07-13T12:00:00.005Z",
+        "evidence": {
+          "connector_evidence_id": "receipt:1:succeeded",
+          "entitlement_id": "entitlement:audit-tool:purchase",
+          "entitlement_state": "consumed"
+        }
+      }
+    ]
+  },
+  "effect": {
+    "action": "transfer",
+    "args": {
+      "receiver_id": "merchant",
+      "amount_cents": 2500
+    },
+    "payload": {
+      "sender_id": "alice",
+      "receiver_id": "merchant",
+      "amount_cents": 2500
+    }
+  },
+  "recorded_at": "2026-07-12T16:30:00Z"
+}

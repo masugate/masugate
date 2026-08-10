@@ -1,0 +1,72 @@
+{
+  "artifact_store_path": "/var/lib/masugate-connector-worker/artifacts.sqlite",
+  "authority": {
+    "action": "fs.write",
+    "connector_id": "filesystem-v1",
+    "coordination_domain_id": "filesystem-example-domain",
+    "provider_identity": {
+      "configuration_version": "v1",
+      "implementation_version": "v1",
+      "provider_id": "filesystem-example-provider"
+    }
+  },
+  "connector_registry": {
+    "connectors": [
+      {
+        "allowed_destinations": [],
+        "capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+        "capability_profile": {
+          "ambiguity_handling": "status-query",
+          "cancellation": true,
+          "fencing": true,
+          "idempotent_dispatch": true,
+          "max_payload_bytes": 16384,
+          "max_result_bytes": 4096,
+          "status_query": true
+        },
+        "configuration_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "credential_refs": [],
+        "entry_point": "filesystem",
+        "id": "filesystem-v1",
+        "implementation_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "maturity": "reference-effect",
+        "package_id": "masugate-connector-filesystem",
+        "package_version": "0.1.0",
+        "sdk_contract_version": "masugate.connector-sdk.v1",
+        "version": "0.1.0"
+      }
+    ],
+    "contract_version": "masugate.connector-registry.v2"
+  },
+  "contract_version": "masugate.connector-worker-bootstrap.v1",
+  "deployment": {
+    "action": "fs.write",
+    "allowed_destinations": [],
+    "artifact_fields": ["content"],
+    "connector_capabilities": {
+      "ambiguity_handling": "status-query",
+      "cancellation": true,
+      "fencing": true,
+      "idempotent_dispatch": true,
+      "max_payload_bytes": 16384,
+      "max_result_bytes": 4096,
+      "status_query": true
+    },
+    "connector_configuration_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+    "connector_entry_point": "filesystem",
+    "connector_id": "filesystem-v1",
+    "connector_package_id": "masugate-connector-filesystem",
+    "connector_package_version": "0.1.0",
+    "connector_sdk_contract_version": "masugate.connector-sdk.v1",
+    "credential_refs": []
+  },
+  "execution_store_path": "/var/lib/masugate-connector-worker/executions.sqlite",
+  "handoff_store_path": "/var/lib/masugate-connector-worker/handoffs.sqlite",
+  "secret_mount": {
+    "allowed_files": {
+      "worker-artifact-secret": "worker-artifact-secret"
+    },
+    "root": "/run/masugate-secrets"
+  },
+  "worker_id": "filesystem-example-worker"
+}

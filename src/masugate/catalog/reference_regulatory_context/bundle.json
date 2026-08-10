@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.regulatory-context.reference",
+    "version": "1.0.0",
+    "layer": "deployment-regulatory",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {},
+    "effects": [
+      {
+        "action": "api_spend",
+        "argument_types": {
+          "request_ref": "String",
+          "service": "String",
+          "units": "Int"
+        },
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "units",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "action": "http.post",
+        "argument_types": {
+          "content_digest": "String",
+          "destination": "String",
+          "payload_bytes": "Int"
+        },
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "payload_bytes",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      }
+    ],
+    "views": [],
+    "certified_inputs": [
+      {
+        "name": "certified.export_destination_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "regulatory-context-provider"}
+      },
+      {
+        "name": "certified.position_limit_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "regulatory-context-provider"}
+      },
+      {
+        "name": "certified.sanctions_counterparty_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "regulatory-context-provider"}
+      },
+      {
+        "name": "certified.trade_execution_window_open",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "regulatory-context-provider"}
+      }
+    ]
+  },
+  "policies": [
+    {
+      "id": "api_spend_regulatory_reference",
+      "version": "1.0.0",
+      "source": "api_spend_regulatory_reference.pvl",
+      "semantic_sha256": "e218d6176898a73ae2e8978660a819bdb0e77cdeaf48d678e16edfcf0187d824",
+      "action": "api_spend",
+      "required_views": [],
+      "certified_inputs": [
+        "certified.export_destination_permitted",
+        "certified.position_limit_permitted",
+        "certified.sanctions_counterparty_permitted",
+        "certified.trade_execution_window_open"
+      ],
+      "limitations": [
+        {
+          "class": "reference-source-only",
+          "statement": "The projection is deployment configuration and not an authoritative sanctions, counterparty, position, market, export-class, destination, or legal source."
+        }
+      ],
+      "governance": {
+        "driver": "reference-regulatory",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "operational-limits",
+        "connector_id": "reference-api-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": [
+          "authoritative-legal-source",
+          "real-world-screening",
+          "legal-sufficiency"
+        ]
+      }
+    },
+    {
+      "id": "http_post_regulatory_reference",
+      "version": "1.0.0",
+      "source": "http_post_regulatory_reference.pvl",
+      "semantic_sha256": "a5604f139d4119165a269791ba1b902a13b1e2b15ae95f6ffaabc9c244845758",
+      "action": "http.post",
+      "required_views": [],
+      "certified_inputs": [
+        "certified.export_destination_permitted",
+        "certified.position_limit_permitted",
+        "certified.sanctions_counterparty_permitted",
+        "certified.trade_execution_window_open"
+      ],
+      "limitations": [
+        {
+          "class": "reference-source-only",
+          "statement": "The projection is deployment configuration and not an authoritative sanctions, counterparty, position, market, export-class, destination, or legal source."
+        }
+      ],
+      "governance": {
+        "driver": "reference-regulatory",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "operational-limits",
+        "connector_id": "reference-http-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": [
+          "authoritative-legal-source",
+          "real-world-screening",
+          "legal-sufficiency"
+        ]
+      }
+    }
+  ]
+}

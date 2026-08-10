@@ -1,0 +1,5 @@
+policy adversarial_spend_purchase on spend.purchase {
+  deny budget_cap when args.amount_cents > spend.available_cents(principal.team);
+  escalate ask_first when args.amount_cents >= 500;
+  allow otherwise;
+}

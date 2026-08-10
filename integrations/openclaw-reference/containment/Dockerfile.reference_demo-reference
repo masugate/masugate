@@ -1,0 +1,23 @@
+FROM python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7
+
+WORKDIR /opt/masugate
+
+# The 2.8b demos deliberately install the two first-party Python artifacts
+# produced by build-reference-release.py.  The Docker context is assembled by
+# scripts/run_reference_demos.py from that verified output; no source tree is
+# copied into this image.
+COPY artifacts/python/masugate/*.whl /artifacts/
+COPY artifacts/python/masugate-connector-sdk/*.whl /artifacts/
+COPY artifacts/python/masugate-client/*.whl /artifacts/
+COPY artifacts/python/reference/*.whl /artifacts/
+COPY artifacts/python/runtime/wheelhouse/ /wheelhouse/
+COPY artifacts/python/runtime/requirements.txt /runtime-requirements.txt
+RUN pip install --no-cache-dir --no-index --find-links=/wheelhouse \
+        --require-hashes -r /runtime-requirements.txt \
+ && pip install --no-cache-dir --no-index --no-deps \
+        /artifacts/masugate_connector_sdk-*.whl /artifacts/masugate-*.whl \
+        /artifacts/masugate_client-*.whl \
+        /artifacts/masugate_openclaw_reference-*.whl \
+ && pip check
+
+CMD ["python", "-m", "masugate_openclaw_reference.gateway_recovery_live", "masugated"]

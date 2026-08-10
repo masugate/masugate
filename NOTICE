@@ -1,0 +1,5 @@
+MasuGate
+
+This distribution includes the TypeBox 1.3.3 runtime component in the packed
+@masugate/openclaw package. Its MIT license and required attribution are in
+THIRD_PARTY_NOTICES.md and in the bundled component's license file.

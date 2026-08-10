@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/catalog/schema/bundle.schema.json",
+  "title": "MasuGate policy bundle manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "bundle", "contracts", "policies"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "bundle": {"$ref": "#/$defs/bundle"},
+    "contracts": {"$ref": "#/$defs/contracts"},
+    "policies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/policy"}
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^(?!.*[\\r\\n])[A-Za-z][A-Za-z0-9_.-]{0,127}$"
+    },
+    "cname": {
+      "type": "string",
+      "pattern": "^(?!.*[\\r\\n])[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "dotted": {
+      "type": "string",
+      "pattern": "^(?!.*[\\r\\n])[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+$"
+    },
+    "action": {
+      "type": "string",
+      "pattern": "^(?!.*[\\r\\n])[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(?!.*[\\r\\n])[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$"
+    },
+    "type_name": {
+      "enum": ["Bool", "Int", "String", "Duration"]
+    },
+    "provider_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "capability"],
+      "properties": {
+        "kind": {"const": "provider"},
+        "capability": {
+          "type": "string",
+          "pattern": "^(?!.*[\\r\\n])[a-z][a-z0-9-]{0,127}$"
+        }
+      }
+    },
+    "gap_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "reason"],
+      "properties": {
+        "kind": {"const": "gap"},
+        "id": {"$ref": "#/$defs/id"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "resolution": {
+      "oneOf": [
+        {"$ref": "#/$defs/provider_resolution"},
+        {"$ref": "#/$defs/gap_resolution"}
+      ]
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "layer", "mode"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "version": {"$ref": "#/$defs/version"},
+        "layer": {
+          "enum": ["platform-safety", "deployment-regulatory", "owner"]
+        },
+        "mode": {"enum": ["mandatory", "configurable"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"layer": {"const": "owner"}}},
+          "then": {"properties": {"mode": {"const": "configurable"}}},
+          "else": {"properties": {"mode": {"const": "mandatory"}}}
+        }
+      ]
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["principal_attributes", "effects", "views", "certified_inputs"],
+      "properties": {
+        "principal_attributes": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/cname"},
+          "additionalProperties": {"$ref": "#/$defs/type_name"}
+        },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/effect"}
+        },
+        "views": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/view"}
+        },
+        "certified_inputs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/certified_input"}
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action",
+        "argument_types",
+        "owner",
+        "required_guarantee",
+        "consumable_arg",
+        "resolution"
+      ],
+      "properties": {
+        "action": {"$ref": "#/$defs/action"},
+        "argument_types": {
+          "type": "object",
+          "propertyNames": {"$ref": "#/$defs/cname"},
+          "additionalProperties": {"$ref": "#/$defs/type_name"}
+        },
+        "owner": {"$ref": "#/$defs/id"},
+        "required_guarantee": {
+          "enum": ["best-effort", "policy-state-serializable"]
+        },
+        "consumable_arg": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/cname"}]
+        },
+        "resolution": {"$ref": "#/$defs/resolution"}
+      }
+    },
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "argument_types",
+        "return_type",
+        "owner",
+        "consistency",
+        "max_latency_ms",
+        "bounded",
+        "reservation_kind",
+        "resolution"
+      ],
+      "properties": {
+        "name": {"$ref": "#/$defs/dotted"},
+        "argument_types": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/type_name"}
+        },
+        "return_type": {"$ref": "#/$defs/type_name"},
+        "owner": {"$ref": "#/$defs/id"},
+        "consistency": {"$ref": "#/$defs/id"},
+        "max_latency_ms": {"type": "integer", "minimum": 1},
+        "bounded": {"const": true},
+        "reservation_kind": {
+          "enum": [
+            "unsupported",
+            "commit-guarded",
+            "consumed-capacity",
+            "available-capacity"
+          ]
+        },
+        "resolution": {"$ref": "#/$defs/resolution"}
+      }
+    },
+    "certified_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "resolution"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^(?!.*[\\r\\n])certified\\.[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "type": {"$ref": "#/$defs/type_name"},
+        "resolution": {"$ref": "#/$defs/resolution"}
+      }
+    },
+    "limitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "statement"],
+      "properties": {
+        "class": {"$ref": "#/$defs/id"},
+        "statement": {"type": "string", "minLength": 1}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "source",
+        "semantic_sha256",
+        "action",
+        "required_views",
+        "certified_inputs",
+        "limitations"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/cname"},
+        "version": {"$ref": "#/$defs/version"},
+        "source": {
+          "type": "string",
+          "pattern": "^(?!.*[\\r\\n])(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+\\.pvl$"
+        },
+        "semantic_sha256": {
+          "type": "string",
+          "pattern": "^(?!.*[\\r\\n])[0-9a-f]{64}$"
+        },
+        "action": {"$ref": "#/$defs/action"},
+        "required_views": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/dotted"}
+        },
+        "certified_inputs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(?!.*[\\r\\n])certified\\.[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/limitation"}
+        },
+        "governance": {"$ref": "#/$defs/governance"}
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "driver",
+        "coordination_domain",
+        "provider_owner",
+        "connector_id",
+        "pending_plan",
+        "enforcement",
+        "out_of_scope_classes"
+      ],
+      "properties": {
+        "driver": {
+          "enum": ["adversarial", "customer-intent", "reference-regulatory"]
+        },
+        "coordination_domain": {"$ref": "#/$defs/id"},
+        "provider_owner": {"$ref": "#/$defs/id"},
+        "connector_id": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/id"}]
+        },
+        "pending_plan": {
+          "enum": ["revalidate", "scoped-hold", "reservation-proof"]
+        },
+        "enforcement": {"$ref": "#/$defs/enforcement"},
+        "out_of_scope_classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        }
+      }
+    },
+    "enforcement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {"kind": {"const": "executable"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id", "reason"],
+          "properties": {
+            "kind": {"const": "gap"},
+            "id": {"$ref": "#/$defs/id"},
+            "reason": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+# Resolution-volatile certified input forces protected revalidation.
+policy readiness_review_guard on reference.review {
+  deny high_risk when certified.risk == "high";
+  escalate human_review when args.require_review == true;
+  allow otherwise;
+}

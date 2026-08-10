@@ -1,0 +1,21 @@
+{
+  "masugatedBaseUrl": "http://masugated:8000",
+  "agents": {
+    "buyer-alpha": "MASUGATE_BUYER_ALPHA_TOKEN"
+  },
+  "routes": {
+    "purchase": {
+      "action": "spend.purchase",
+      "arguments": {
+        "amount_cents": "integer",
+        "merchant_id": "string",
+        "request_ref": "string"
+      },
+      "owner": {
+        "providerId": "masugate.spend.reference",
+        "position": "protected-external",
+        "connectorId": "reference-purchase-v1"
+      }
+    }
+  }
+}

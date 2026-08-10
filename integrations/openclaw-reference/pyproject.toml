@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "masugate-openclaw-reference"
+version = "0.1.0"
+description = "Bounded, governed OpenClaw reference deployment for MasuGate"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+dependencies = [
+    "masugate==0.1.0",
+    "masugate-client==0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/MasuGateGovernance/MasuGate"
+Source = "https://github.com/MasuGateGovernance/MasuGate"
+Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+
+# The deployment source remains outside the reusable ``masugate`` wheel. This
+# package owns a standard src payload so its sdist can rebuild independently;
+# the release builder rejects it if it drifts from the canonical reference source.
+[tool.hatch.build.targets.wheel.force-include]
+"containment" = "masugate_openclaw_reference/containment"
+"fleet-roster.example.json" = "masugate_openclaw_reference/fleet-roster.example.json"
+"plugin-config.example.json" = "masugate_openclaw_reference/plugin-config.example.json"
+"plugin-config.native-approval.example.json" = "masugate_openclaw_reference/plugin-config.native-approval.example.json"
+"safe-content-plugin" = "masugate_openclaw_reference/safe-content-plugin"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/README.md",
+    "/pyproject.toml",
+]
+
+[tool.hatch.build.targets.sdist.force-include]
+"src/masugate_openclaw_reference" = "src/masugate_openclaw_reference"
+"containment" = "containment"
+"fleet-roster.example.json" = "fleet-roster.example.json"
+"plugin-config.example.json" = "plugin-config.example.json"
+"plugin-config.native-approval.example.json" = "plugin-config.native-approval.example.json"
+"safe-content-plugin" = "safe-content-plugin"

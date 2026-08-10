@@ -1,0 +1,26 @@
+{
+  "schema_version": "masugate.openclaw-reference.network-topology/v1",
+  "agent_network": "masugate-openclaw-reference-agent",
+  "networks": {
+    "masugate-openclaw-reference-agent": {
+      "internal": true,
+      "members": ["openclaw-session-sandbox"]
+    },
+    "masugate-openclaw-reference-safe-content": {
+      "internal": true,
+      "members": ["openclaw-gateway", "safe-content"]
+    },
+    "masugate-openclaw-reference-governance": {
+      "internal": true,
+      "members": [
+        "openclaw-gateway",
+        "masugate-governance-postgres",
+        "masugated"
+      ]
+    },
+    "masugate-openclaw-reference-provider": {
+      "internal": true,
+      "members": ["reference-purchase", "reference-purchase-connector"]
+    }
+  }
+}

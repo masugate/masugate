@@ -1,0 +1,8 @@
+{
+  "action": "reference.notify",
+  "field": "content",
+  "idempotency_key": "masugate:v1:artifact-fixture",
+  "media_type": "text/plain",
+  "content_base64": "aGVsbG8gY29ubmVjdG9y",
+  "adapter_invocation": "{\"action\":{\"arguments\":{\"content\":\"hello connector\"},\"name\":\"reference.notify\"},\"adapter\":{\"capabilities\":[\"receipt\"],\"contract_version\":\"masugate.host-adapter.v1\",\"id\":\"fixture-adapter\"},\"principal\":{\"id\":\"fixture-principal\"},\"source\":{\"id\":\"fixture-call\",\"namespace\":\"fixture\"}}"
+}

@@ -1,0 +1,4 @@
+{
+  "contract_version": "masugate.host-adapter-roster.v1",
+  "principals": ["adapter:buyer"]
+}

@@ -1,0 +1,112 @@
+"""Framework-neutral operation-pack loading, compilation, and deployment checks.
+
+Operation packs are public, declarative descriptions of bounded semantic
+effects.  They intentionally do not contain provider code, credentials, or
+host-framework imports.
+"""
+
+from .artifacts import (
+    DEFAULT_ARTIFACT_TTL,
+    MAX_ARTIFACT_CLASSIFICATION_LENGTH,
+    MAX_ARTIFACT_RECORDS,
+    ArtifactBinding,
+    ArtifactConflict,
+    ArtifactError,
+    ArtifactInspection,
+    ArtifactInspector,
+    ArtifactMetadata,
+    ArtifactReader,
+    ArtifactStore,
+    ArtifactUnavailable,
+    ReferenceArtifactInspector,
+    SqliteArtifactStore,
+)
+from .compiler import (
+    CompiledOperationRoutes,
+    ConnectorRegistration,
+    ConnectorRegistry,
+    compile_operation_pack,
+    load_connector_registry,
+    load_registered_connector,
+    validate_compiled_operation_routes,
+)
+from .containment import (
+    CONTAINMENT_CONTRACT_VERSION,
+    ConnectorContainmentError,
+    validate_connector_worker_containment,
+)
+from .loader import (
+    DEFAULT_OPERATION_PACK_CANONICAL_BYTES,
+    DEFAULT_ROUTE_MANIFEST_CANONICAL_BYTES,
+    DEFAULT_SCHEMA_CANONICAL_BYTES,
+    MAX_OPERATION_ARTIFACT_FIELDS,
+    MAX_OPERATION_PACK_ACTIONS,
+    MAX_REQUIRED_CONNECTOR_CAPABILITIES,
+    OperationDeploymentBinding,
+    OperationPack,
+    canonical_deployment_binding,
+    canonical_operation_pack,
+    load_deployment_binding,
+    load_operation_pack,
+)
+from .secrets import MountedFileSecretResolver, SecretResolver, SecretValue
+from .worker import (
+    ConnectorHandoff,
+    ConnectorHandoffStore,
+    ConnectorWorker,
+    ConnectorWorkerDeployment,
+    ConnectorWorkerError,
+    HandoffArtifact,
+    SqliteConnectorHandoffStore,
+    resolve_handoff_artifact,
+)
+
+__all__ = [
+    "CONTAINMENT_CONTRACT_VERSION",
+    "DEFAULT_ARTIFACT_TTL",
+    "DEFAULT_OPERATION_PACK_CANONICAL_BYTES",
+    "DEFAULT_ROUTE_MANIFEST_CANONICAL_BYTES",
+    "DEFAULT_SCHEMA_CANONICAL_BYTES",
+    "MAX_ARTIFACT_CLASSIFICATION_LENGTH",
+    "MAX_ARTIFACT_RECORDS",
+    "MAX_OPERATION_ARTIFACT_FIELDS",
+    "MAX_OPERATION_PACK_ACTIONS",
+    "MAX_REQUIRED_CONNECTOR_CAPABILITIES",
+    "ArtifactBinding",
+    "ArtifactConflict",
+    "ArtifactError",
+    "ArtifactInspection",
+    "ArtifactInspector",
+    "ArtifactMetadata",
+    "ArtifactReader",
+    "ArtifactStore",
+    "ArtifactUnavailable",
+    "CompiledOperationRoutes",
+    "ConnectorContainmentError",
+    "ConnectorHandoff",
+    "ConnectorHandoffStore",
+    "ConnectorRegistration",
+    "ConnectorRegistry",
+    "ConnectorWorker",
+    "ConnectorWorkerDeployment",
+    "ConnectorWorkerError",
+    "HandoffArtifact",
+    "MountedFileSecretResolver",
+    "OperationDeploymentBinding",
+    "OperationPack",
+    "ReferenceArtifactInspector",
+    "SecretResolver",
+    "SecretValue",
+    "SqliteArtifactStore",
+    "SqliteConnectorHandoffStore",
+    "canonical_deployment_binding",
+    "canonical_operation_pack",
+    "compile_operation_pack",
+    "load_connector_registry",
+    "load_deployment_binding",
+    "load_operation_pack",
+    "load_registered_connector",
+    "resolve_handoff_artifact",
+    "validate_compiled_operation_routes",
+    "validate_connector_worker_containment",
+]

@@ -1,0 +1,10 @@
+FROM node:24.16.0-alpine@sha256:21f403ab171f2dc89bad4dd69d7721bfd15f084ccb46cdd225f31f2bc59b5c9a
+
+COPY artifacts/offline/alpine/keys/ /etc/apk/keys/
+COPY artifacts/offline/alpine/repositories/ /opt/masugate-offline/alpine/
+RUN apk --no-network --no-cache \
+    --repository /opt/masugate-offline/alpine/main \
+    --repository /opt/masugate-offline/alpine/community \
+    add curl python3
+
+CMD ["sh", "-c", "while :; do sleep 3600; done"]

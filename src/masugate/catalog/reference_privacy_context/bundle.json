@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.privacy-context.reference",
+    "version": "1.0.0",
+    "layer": "deployment-regulatory",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {},
+    "effects": [
+      {
+        "action": "api_spend",
+        "argument_types": {
+          "request_ref": "String",
+          "service": "String",
+          "units": "Int"
+        },
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "units",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "action": "http.post",
+        "argument_types": {
+          "content_digest": "String",
+          "destination": "String",
+          "payload_bytes": "Int"
+        },
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "payload_bytes",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      }
+    ],
+    "views": [],
+    "certified_inputs": [
+      {
+        "name": "certified.consent_marketing_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "privacy-context-provider"}
+      },
+      {
+        "name": "certified.phi_recipient_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "privacy-context-provider"}
+      },
+      {
+        "name": "certified.pii_classifier_flagged",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "privacy-context-provider"}
+      },
+      {
+        "name": "certified.privacy_transfer_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "privacy-context-provider"}
+      }
+    ]
+  },
+  "policies": [
+    {
+      "id": "api_spend_privacy_reference",
+      "version": "1.0.0",
+      "source": "api_spend_privacy_reference.pvl",
+      "semantic_sha256": "7423e79bc4941c0c0b848b00286eea5c7826b75f36f59015d764b61cefa63b41",
+      "action": "api_spend",
+      "required_views": [],
+      "certified_inputs": [
+        "certified.consent_marketing_permitted",
+        "certified.phi_recipient_permitted",
+        "certified.pii_classifier_flagged",
+        "certified.privacy_transfer_permitted"
+      ],
+      "limitations": [
+        {
+          "class": "reference-source-only",
+          "statement": "The projection is a versioned deployment configuration, not an authoritative privacy, PHI, consent, or jurisdiction source."
+        },
+        {
+          "class": "classifier-limitation",
+          "statement": "A configured PII classifier can flag known immutable content digests but can have false negatives; an unflagged result does not certify content as PII-free."
+        }
+      ],
+      "governance": {
+        "driver": "reference-regulatory",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "operational-limits",
+        "connector_id": "reference-api-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": [
+          "authoritative-privacy-source",
+          "perfect-pii-classification",
+          "legal-sufficiency"
+        ]
+      }
+    },
+    {
+      "id": "http_post_privacy_reference",
+      "version": "1.0.0",
+      "source": "http_post_privacy_reference.pvl",
+      "semantic_sha256": "da4c4e9647e9aff6d8ea876095c0d30abb46355547a10a521a598f42cbd3617c",
+      "action": "http.post",
+      "required_views": [],
+      "certified_inputs": [
+        "certified.consent_marketing_permitted",
+        "certified.phi_recipient_permitted",
+        "certified.pii_classifier_flagged",
+        "certified.privacy_transfer_permitted"
+      ],
+      "limitations": [
+        {
+          "class": "reference-source-only",
+          "statement": "The projection is a versioned deployment configuration, not an authoritative privacy, PHI, consent, or jurisdiction source."
+        },
+        {
+          "class": "classifier-limitation",
+          "statement": "A configured PII classifier can flag known immutable content digests but can have false negatives; an unflagged result does not certify content as PII-free."
+        }
+      ],
+      "governance": {
+        "driver": "reference-regulatory",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "operational-limits",
+        "connector_id": "reference-http-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": [
+          "authoritative-privacy-source",
+          "perfect-pii-classification",
+          "legal-sufficiency"
+        ]
+      }
+    }
+  ]
+}

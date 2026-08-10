@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/operation-deployment-binding.schema.json",
+  "title": "MasuGate operation deployment binding",
+  "description": "Trusted server-only binding. This document is never supplied to or rendered for a model host.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "pack", "routes"],
+  "properties": {
+    "contract_version": {"const": "masugate.operation-deployment-binding.v1"},
+    "pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {"id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/identifier"}, "digest": {"$ref": "#/$defs/digest"}}
+    },
+    "routes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/route"}}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:/-]+$"},
+    "action_identifier": {"type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[A-Za-z0-9._:/-]+$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provider": {
+      "type": "object", "additionalProperties": false, "required": ["id", "implementation_digest", "configuration_digest"],
+      "properties": {"id": {"$ref": "#/$defs/identifier"}, "implementation_digest": {"$ref": "#/$defs/digest"}, "configuration_digest": {"$ref": "#/$defs/digest"}}
+    },
+    "connector": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "implementation_digest", "configuration_digest", "credential_refs", "allowed_destinations"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/identifier"}, "implementation_digest": {"$ref": "#/$defs/digest"}, "configuration_digest": {"$ref": "#/$defs/digest"},
+        "credential_refs": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "allowed_destinations": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}
+      }
+    },
+    "route": {
+      "type": "object", "additionalProperties": false, "required": ["action", "host_tool", "provider"],
+      "properties": {"action": {"$ref": "#/$defs/action_identifier"}, "host_tool": {"$ref": "#/$defs/identifier"}, "provider": {"$ref": "#/$defs/provider"}, "connector": {"$ref": "#/$defs/connector"}}
+    }
+  }
+}

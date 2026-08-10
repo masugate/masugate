@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.communications.reference",
+    "version": "1.0.0",
+    "layer": "deployment-regulatory",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {
+      "team": "String"
+    },
+    "effects": [
+      {
+        "action": "send_message",
+        "argument_types": {
+          "channel": "String",
+          "content_digest": "String",
+          "peer": "String"
+        },
+        "owner": "communications",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "action": "channel.post",
+        "argument_types": {
+          "broadcast": "Bool",
+          "channel": "String",
+          "content_digest": "String"
+        },
+        "owner": "communications",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      }
+    ],
+    "views": [
+      {
+        "name": "approval.policy_granted",
+        "argument_types": [
+          "String",
+          "String"
+        ],
+        "return_type": "Bool",
+        "owner": "approval-state",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "name": "comms.channel_post_claimed",
+        "argument_types": [
+          "String",
+          "String",
+          "String",
+          "String"
+        ],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "name": "comms.channel_post_count",
+        "argument_types": [
+          "String"
+        ],
+        "return_type": "Int",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "name": "comms.first_contact",
+        "argument_types": [
+          "String",
+          "String"
+        ],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "name": "comms.message_count",
+        "argument_types": [
+          "String",
+          "String"
+        ],
+        "return_type": "Int",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "name": "comms.peer_allowed",
+        "argument_types": [
+          "String",
+          "String"
+        ],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      },
+      {
+        "name": "comms.send_claimed",
+        "argument_types": [
+          "String",
+          "String",
+          "String",
+          "String",
+          "String"
+        ],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "communications-provider"
+        }
+      }
+    ],
+    "certified_inputs": []
+  },
+  "policies": [
+    {
+      "id": "send_message_reference",
+      "version": "1.0.0",
+      "source": "send_message_reference.pvl",
+      "semantic_sha256": "e4b9411322bbb2bac85d267e31c6cf9b57dbff566c0c49a6cf57a1dbee21338e",
+      "action": "send_message",
+      "required_views": [
+        "comms.first_contact",
+        "comms.message_count",
+        "comms.peer_allowed",
+        "comms.send_claimed"
+      ],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "effect-boundary",
+          "statement": "This reference policy governs logical communications state and protected dispatch identity; a later connector owns actual message delivery."
+        }
+      ]
+    },
+    {
+      "id": "channel_post_reference",
+      "version": "1.0.0",
+      "source": "channel_post_reference.pvl",
+      "semantic_sha256": "b8c93d6fdd1bb619e6957b94a0b9af5cf4e1a9c00e665d708c1a6f690f3ea6bb",
+      "action": "channel.post",
+      "required_views": [
+        "approval.policy_granted",
+        "comms.channel_post_claimed",
+        "comms.channel_post_count"
+      ],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "approval-boundary",
+          "statement": "approval.policy_granted is MasuGate-owned configuration state, not a framework approval presentation or callback."
+        }
+      ]
+    }
+  ]
+}

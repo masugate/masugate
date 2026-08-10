@@ -1,0 +1,8 @@
+policy api_spend_reference on api_spend {
+  deny capability_not_permitted when certified.capability_permitted == false;
+  deny request_time_window_closed when certified.request_time_window_open == false;
+  deny live_resolution_window_closed when certified.live_resolution_window_open == false;
+  deny service_quota_exhausted when quota.used(args.service, principal.id) + args.units > quota.limit(args.service, principal.id);
+  deny cross_action_velocity_cap when velocity.count(principal.id) >= velocity.limit(principal.id);
+  allow otherwise;
+}

@@ -1,0 +1,9 @@
+{
+  "action": "transfer",
+  "args": {
+    "receiver_id": "merchant",
+    "amount_cents": 2500
+  },
+  "idempotency_key": "mcp:req-7:attempt-1",
+  "trace_id": "trace-2026-07-12-0007"
+}

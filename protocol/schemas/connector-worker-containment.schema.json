@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/connector-worker-containment.schema.json",
+  "title": "MasuGate connector-worker containment profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "connector_worker"],
+  "properties": {
+    "contract_version": {"const": "masugate.connector-worker-containment.v1"},
+    "connector_worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_as_non_root",
+        "read_only_root_filesystem",
+        "drop_all_capabilities",
+        "no_new_privileges",
+        "network",
+        "secret_mount",
+        "environment_allowlist",
+        "blocked_surfaces",
+        "database_administration_credentials"
+      ],
+      "properties": {
+        "run_as_non_root": {"const": true},
+        "read_only_root_filesystem": {"const": true},
+        "drop_all_capabilities": {"const": true},
+        "no_new_privileges": {"const": true},
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "agent_gateway_reachable", "allowed_destinations"],
+          "properties": {
+            "name": {"const": "connector-only"},
+            "agent_gateway_reachable": {"const": false},
+            "allowed_destinations": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "secret_mount": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target", "read_only", "allowlisted_files_only"],
+          "properties": {
+            "target": {"const": "/run/masugate-secrets"},
+            "read_only": {"const": true},
+            "allowlisted_files_only": {"const": true}
+          }
+        },
+        "environment_allowlist": {"const": ["LANG", "TZ"]},
+        "blocked_surfaces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^blocked\\."}
+        },
+        "database_administration_credentials": {"const": false}
+      }
+    }
+  }
+}

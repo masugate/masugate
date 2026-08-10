@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/host-adapter-roster.schema.json",
+  "title": "MasuGate host-adapter principal roster",
+  "description": "Independent deployment authority for principals that must supply authenticated action assertions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "principals"],
+  "properties": {
+    "contract_version": {"const": "masugate.host-adapter-roster.v1"},
+    "principals": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^\\S(?:.*\\S)?$"
+      },
+      "uniqueItems": true
+    }
+  }
+}

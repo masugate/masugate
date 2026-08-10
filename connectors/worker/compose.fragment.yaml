@@ -1,0 +1,43 @@
+# Closed worker bootstrap. The deployment-mounted JSON names only sealed
+# registry/deployment facts and durable stores; this process exposes no caller
+# execution endpoint and claims only committed handoffs.
+services:
+  masugate-connector-worker:
+    image: ${MASUGATE_CONNECTOR_WORKER_IMAGE:?build or load the reviewed local worker artifact first}
+    command:
+      ["--serve-committed-handoffs", "--bootstrap", "/run/masugate-worker/bootstrap.json"]
+    user: "10001:10001"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      LANG: C.UTF-8
+      TZ: UTC
+    networks: [connector_only]
+    volumes:
+      - type: volume
+        source: masugate_connector_secrets
+        target: /run/masugate-secrets
+        read_only: true
+      - type: volume
+        source: masugate_connector_bootstrap
+        target: /run/masugate-worker
+        read_only: true
+      - type: volume
+        source: masugate_connector_state
+        target: /var/lib/masugate-connector-worker
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+networks:
+  connector_only:
+    internal: true
+volumes:
+  masugate_connector_secrets:
+    name: ${MASUGATE_CONNECTOR_SECRETS_VOLUME:-masugate_connector_secrets}
+    external: true
+  masugate_connector_bootstrap:
+    name: ${MASUGATE_CONNECTOR_BOOTSTRAP_VOLUME:-masugate_connector_bootstrap}
+    external: true
+  masugate_connector_state:
+    name: ${MASUGATE_CONNECTOR_STATE_VOLUME:-masugate_connector_state}
+    external: true

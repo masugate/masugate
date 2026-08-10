@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "masugate-connector-google-calendar"
+version = "0.1.0"
+description = "Exact narrow Google Calendar profile for MasuGate"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+
+dependencies = ["masugate-connector-sdk==0.1.0"]
+
+[project.urls]
+Homepage = "https://github.com/MasuGateGovernance/MasuGate"
+Source = "https://github.com/MasuGateGovernance/MasuGate"
+Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+
+[project.entry-points."masugate.connector"]
+google-calendar = "masugate_connector_google_calendar:connector"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/masugate_connector_google_calendar"]

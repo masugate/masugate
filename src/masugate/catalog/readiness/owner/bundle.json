@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "owner.readiness.preferences",
+    "version": "1.0.0",
+    "layer": "owner",
+    "mode": "configurable"
+  },
+  "contracts": {
+    "principal_attributes": {},
+    "effects": [
+      {
+        "action": "reference.write",
+        "argument_types": {"target": "String", "quantity": "Int"},
+        "owner": "masugate.reference-provider",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "quantity",
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      }
+    ],
+    "views": [],
+    "certified_inputs": []
+  },
+  "policies": [
+    {
+      "id": "readiness_owner_limit",
+      "version": "1.0.0",
+      "source": "owner_limit.pvl",
+      "semantic_sha256": "9bcc481b7cb903d4dc0936968102ff2beefe3398f658da0865d87c13bda405cb",
+      "action": "reference.write",
+      "required_views": [],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "fixture-only",
+          "statement": "Demonstrates owner tightening and is not deployment guidance."
+        }
+      ]
+    }
+  ]
+}

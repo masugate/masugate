@@ -1,0 +1,37 @@
+{
+  "contract_version": "masugate.operation-pack.v1",
+  "id": "masugate.operation.spend",
+  "version": "0.1.0",
+  "compatibility": {
+    "route_manifest": "masugate.governed-route-manifest.v2",
+    "connector_contract": "masugate.connector.v1"
+  },
+  "actions": [
+    {
+      "action": "spend.purchase",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "amount_cents": {"type": "integer", "minimum": 50, "maximum": 99999999},
+          "merchant_id": {"type": "string", "minLength": 1, "maxLength": 255},
+          "request_ref": {"type": "string", "minLength": 1, "maxLength": 255}
+        },
+        "required": ["amount_cents", "merchant_id", "request_ref"],
+        "additionalProperties": false
+      },
+      "public_result_schema": {
+        "type": "object",
+        "properties": {
+          "payment_intent_id": {"type": "string", "minLength": 4, "maxLength": 255},
+          "status": {"type": "string", "minLength": 1, "maxLength": 32}
+        },
+        "required": ["payment_intent_id", "status"],
+        "additionalProperties": false
+      },
+      "artifact_fields": [],
+      "owner_position": "protected-external",
+      "required_connector_capabilities": ["cancellation", "fencing", "idempotent-dispatch", "status-query"],
+      "maturity": "reference-effect"
+    }
+  ]
+}

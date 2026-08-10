@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/deployments/openclaw-reference/containment/profile.schema.json",
+  "title": "MasuGate OpenClaw reference containment profile",
+  "description": "Deployment-owned sandbox, credential, tool, mount, and destination profile for the bounded reference containment reference deployment.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "agent_sandbox", "gateway", "connector"],
+  "properties": {
+    "schema_version": {"const": "masugate.openclaw-reference.profile/v1"},
+    "agent_sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "read_only_root",
+        "cap_drop",
+        "no_new_privileges",
+        "network",
+        "mounts",
+        "environment_allowlist",
+        "tool_allowlist",
+        "blocked_surfaces"
+      ],
+      "properties": {
+        "enabled": {"const": true},
+        "read_only_root": {"const": true},
+        "cap_drop": {"const": ["ALL"]},
+        "no_new_privileges": {"const": true},
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default", "allowed_destinations"],
+          "properties": {
+            "default": {"const": "deny"},
+            "allowed_destinations": {"const": []}
+          }
+        },
+        "mounts": {
+          "const": [
+            {
+              "source": "openclaw-managed-session-copy",
+              "target": "/workspace",
+              "read_only": true
+            }
+          ]
+        },
+        "environment_allowlist": {
+          "const": ["LANG", "TZ"]
+        },
+        "tool_allowlist": {"const": ["read", "masugate_governed_action", "masugate_reference_content"]},
+        "blocked_surfaces": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^blocked\\."}
+        }
+      }
+    },
+    "gateway": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_allowlist", "environment", "host_control_mounts", "allowed_destinations"],
+      "properties": {
+        "tool_allowlist": {"const": ["masugate_governed_action", "masugate_reference_content"]},
+        "environment": {"const": ["OPENCLAW_GATEWAY_TOKEN", "MASUGATE_BUYER_ALPHA_TOKEN"]},
+        "host_control_mounts": {"const": ["docker-daemon-socket"]},
+        "allowed_destinations": {"const": ["masugated:8000", "safe-content:8080"]}
+      }
+    },
+    "connector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environment", "allowed_destinations"],
+      "properties": {
+        "environment": {"const": ["REFERENCE_PURCHASE_SERVICE_TOKEN"]},
+        "allowed_destinations": {"const": ["reference-purchase:8081"]}
+      }
+    }
+  }
+}

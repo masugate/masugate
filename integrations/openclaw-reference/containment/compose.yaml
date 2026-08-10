@@ -1,0 +1,111 @@
+services:
+  openclaw-agent-sandbox-image:
+    image: masugate-openclaw-reference-agent-sandbox:reference_containment
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.agent-probe
+    profiles: ["sandbox-image"]
+
+  openclaw-gateway:
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.gateway
+    environment:
+      MASUGATE_BUYER_ALPHA_TOKEN: reference-containment-reference-token
+      # OpenClaw refuses the container-default public bind without gateway
+      # authentication.  This is a control-plane token only: the Gateway has
+      # no published port and the token is neither an agent capability nor a
+      # MasuGate action credential.
+      OPENCLAW_GATEWAY_TOKEN: reference-containment-local-gateway-token
+      MASUGATE_AGENT_SANDBOX_IMAGE: masugate-openclaw-reference-agent-sandbox:reference_containment
+      MASUGATE_REFERENCE_CONTAINMENT_STATE_ROOT: ${MASUGATE_REFERENCE_CONTAINMENT_STATE_ROOT:?set by the live containment oracle}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${MASUGATE_REFERENCE_CONTAINMENT_STATE_ROOT:?set by the live containment oracle}:${MASUGATE_REFERENCE_CONTAINMENT_STATE_ROOT:?set by the live containment oracle}
+    depends_on:
+      safe-content:
+        condition: service_healthy
+    networks:
+      - masugate-openclaw-reference-safe-content
+      - masugate-openclaw-reference-governance
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:18789/healthz').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  safe-content:
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.safe-content
+    healthcheck:
+      # nginx listens only on IPv4 in the pinned sentinel image.  BusyBox
+      # wget resolves localhost to IPv6 first, so use the exact loopback
+      # family instead of turning a healthy bounded service into an unhealthy
+      # Compose dependency on WSL/Docker Desktop.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/reference/travel"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+    networks:
+      - masugate-openclaw-reference-safe-content
+
+  masugated:
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.masugated-sentinel
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8000/"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+    networks:
+      - masugate-openclaw-reference-governance
+
+  masugate-governance-postgres:
+    image: postgres:17.5-alpine@sha256:6567bca8d7bc8c82c5922425a0baee57be8402df92bae5eacad5f01ae9544daa
+    environment:
+      POSTGRES_DB: masugate
+      POSTGRES_PASSWORD: reference-containment-postgres
+      POSTGRES_USER: masugate
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U masugate -d masugate"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+    networks:
+      - masugate-openclaw-reference-governance
+
+  reference-purchase:
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.purchase-sentinel
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8081/healthz"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+    networks:
+      - masugate-openclaw-reference-provider
+
+  reference-purchase-connector:
+    image: alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
+    command: ["sh", "-c", "while :; do sleep 3600; done"]
+    environment:
+      REFERENCE_PURCHASE_SERVICE_TOKEN: reference-containment-connector-token
+    networks:
+      - masugate-openclaw-reference-provider
+
+networks:
+  masugate-openclaw-reference-agent:
+    name: masugate-openclaw-reference-agent
+    internal: true
+  masugate-openclaw-reference-safe-content:
+    name: masugate-openclaw-reference-safe-content
+    internal: true
+  masugate-openclaw-reference-governance:
+    name: masugate-openclaw-reference-governance
+    internal: true
+  masugate-openclaw-reference-provider:
+    name: masugate-openclaw-reference-provider
+    internal: true

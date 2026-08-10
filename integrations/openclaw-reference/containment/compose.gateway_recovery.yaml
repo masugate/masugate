@@ -1,0 +1,59 @@
+# gateway recovery acceptance override.  It retains the reviewed 2.3 Gateway and
+# sandbox topology, but replaces the bounded MasuGate/purchase sentinels with the
+# actual PostgreSQL reference deployment and authenticated purchase service.
+services:
+  openclaw-gateway:
+    environment:
+      MASUGATE_GATEWAY_RECOVERY_LIVE: "1"
+      MASUGATE_RESOLVER_TOKEN: gateway-recovery-resolver-token
+
+  masugated:
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.gateway_recovery-reference
+    command: ["python", "-m", "masugate_openclaw_reference.gateway_recovery_live", "masugated"]
+    environment:
+      MASUGATE_BUYER_ALPHA_TOKEN: reference-containment-reference-token
+      MASUGATE_RESOLVER_TOKEN: gateway-recovery-resolver-token
+      REFERENCE_PURCHASE_SERVICE_TOKEN: reference-containment-connector-token
+      MASUGATE_POSTGRES_DSN: postgresql://masugate:reference-containment-postgres@masugate-governance-postgres:5432/masugate
+      MASUGATE_GATEWAY_RECOVERY_STATE_ROOT: /gateway_recovery-state
+      MASUGATE_GATEWAY_RECOVERY_HAZARD: ${MASUGATE_GATEWAY_RECOVERY_HAZARD:-}
+      MASUGATE_REFERENCE_CREDENTIAL_MANIFEST_JSON: '{"connector_credential_fingerprint":"ca22ffe6801be8e3ac5ae59e5dc702d87888d6797f92ccc5e309d463a9602358","masugate_bearer_credential_fingerprints":["3ca698f5cd94edc0f19843cf662e4acbfa2a3e8d0b6c2a45a7fcbf970139c869","ef0b2a7e6f68563271cbb3ec57246b0f30d8c0491875896c4d6bdc6227f13ce6"]}'
+    volumes:
+      - ${MASUGATE_REFERENCE_CONTAINMENT_STATE_ROOT:?set by the live acceptance oracle}:/gateway_recovery-state
+    depends_on:
+      masugate-governance-postgres:
+        condition: service_healthy
+      reference-purchase:
+        condition: service_healthy
+    networks:
+      - masugate-openclaw-reference-governance
+      - masugate-openclaw-reference-provider
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; request=urllib.request.Request('http://127.0.0.1:8000/v1/health', headers={'Authorization':'Bearer reference-containment-reference-token'}); urllib.request.urlopen(request, timeout=2)\""]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  reference-purchase:
+    build:
+      context: ../../..
+      dockerfile: integrations/openclaw-reference/containment/Dockerfile.gateway_recovery-reference
+    command: ["python", "-m", "masugate_openclaw_reference.gateway_recovery_live", "purchase"]
+    environment:
+      REFERENCE_PURCHASE_SERVICE_TOKEN: reference-containment-connector-token
+      MASUGATE_GATEWAY_RECOVERY_PURCHASE_STATE_ROOT: /reference-purchase-state
+      MASUGATE_REFERENCE_CREDENTIAL_MANIFEST_JSON: '{"connector_credential_fingerprint":"ca22ffe6801be8e3ac5ae59e5dc702d87888d6797f92ccc5e309d463a9602358","masugate_bearer_credential_fingerprints":["3ca698f5cd94edc0f19843cf662e4acbfa2a3e8d0b6c2a45a7fcbf970139c869","ef0b2a7e6f68563271cbb3ec57246b0f30d8c0491875896c4d6bdc6227f13ce6"]}'
+    volumes:
+      - masugate-gateway_recovery-purchase-state:/reference-purchase-state
+    networks:
+      - masugate-openclaw-reference-provider
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; request=urllib.request.Request('http://127.0.0.1:8081/v1/health', headers={'Authorization':'Bearer reference-containment-connector-token'}); urllib.request.urlopen(request, timeout=2)\""]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  masugate-gateway_recovery-purchase-state:

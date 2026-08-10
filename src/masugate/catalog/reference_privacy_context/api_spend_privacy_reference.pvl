@@ -1,0 +1,7 @@
+policy api_spend_privacy_reference on api_spend {
+  deny privacy_transfer_not_permitted when certified.privacy_transfer_permitted == false;
+  deny phi_recipient_not_permitted when certified.phi_recipient_permitted == false;
+  deny consent_or_recipient_window_not_permitted when certified.consent_marketing_permitted == false;
+  deny pii_classifier_flagged when certified.pii_classifier_flagged == true;
+  allow otherwise;
+}

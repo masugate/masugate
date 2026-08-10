@@ -1,0 +1,27 @@
+{
+  "name": "masugate-node-workspace",
+  "private": true,
+  "workspaces": [
+    "clients/typescript",
+    "adapters/typescript",
+    "gateway",
+    "integrations/openclaw"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run build --workspace @masugate/client && npm run check --workspace @masugate/client && npm run check --workspace @masugate/adapter-core && npm run typecheck --workspace @masugate/mcp-gateway && npm run typecheck --workspace @masugate/openclaw",
+    "test": "npm test --workspaces",
+    "pack:client": "npm pack --dry-run --workspace @masugate/client",
+    "pack:adapter-core": "npm run build --workspace @masugate/client && npm pack --dry-run --workspace @masugate/adapter-core",
+    "pack:gateway": "npm run build --workspace @masugate/client && npm pack --dry-run --workspace @masugate/mcp-gateway",
+    "pack:openclaw": "npm run build --workspace @masugate/client && npm pack --dry-run --workspace @masugate/openclaw",
+    "smoke:openclaw": "npm run build --workspace @masugate/client && npm run smoke:runtime --workspace @masugate/openclaw",
+    "pack:smoke": "npm run pack:client && npm run pack:adapter-core && npm run pack:gateway && npm run pack:openclaw"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "esbuild": "0.25.12",
+    "openclaw": "2026.7.1",
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "masugate-reference-content",
+  "name": "MasuGate reference content",
+  "description": "Deployment-owned fixed-document reader for the MasuGate OpenClaw reference profile.",
+  "version": "0.1.0",
+  "contracts": {
+    "tools": ["masugate_reference_content"]
+  },
+  "toolMetadata": {
+    "masugate_reference_content": {
+      "optional": true
+    }
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["safeContentBaseUrl", "documents"],
+    "properties": {
+      "safeContentBaseUrl": {"const": "http://safe-content:8080"},
+      "documents": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["procurement", "travel"],
+        "properties": {
+          "procurement": {"const": "/reference/procurement"},
+          "travel": {"const": "/reference/travel"}
+        }
+      }
+    }
+  }
+}

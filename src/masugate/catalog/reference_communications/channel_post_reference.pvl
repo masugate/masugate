@@ -1,0 +1,7 @@
+policy channel_post_reference on channel.post {
+  deny missing_communication_claim when comms.channel_post_claimed(principal.id, request.operation_id, request.digest, args.channel) == false;
+  deny missing_policy_approval when approval.policy_granted(principal.id, "channel.post") == false;
+  deny channel_lifetime_cap when comms.channel_post_count(args.channel) >= 3;
+  escalate broadcast_escalation when args.broadcast == true;
+  allow otherwise;
+}

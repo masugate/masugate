@@ -1,0 +1,134 @@
+{
+  "schema_version": "masugate.openclaw-reference.containment/v1",
+  "profile_id": "masugate-openclaw-reference/v1",
+  "pinned_openclaw": {
+    "version": "2026.7.1",
+    "node_runtime": "24.16.0"
+  },
+  "protected_resources": [
+    "reference-purchase-api",
+    "reference-purchase-credential",
+    "masugate-action-api",
+    "masugate-governance-postgres"
+  ],
+  "surfaces": [
+    {
+      "id": "governed.spend.purchase",
+      "resource": "reference-purchase-api",
+      "disposition": "governed",
+      "detail": {
+        "tool": "masugate_governed_action",
+        "route": "purchase",
+        "action": "spend.purchase"
+      }
+    },
+    {
+      "id": "safe.read",
+      "resource": "sandbox-local-document-set",
+      "disposition": "safely_available",
+      "detail": {"capability": "read", "target": "sandbox-local-document-set"}
+    },
+    {
+      "id": "safe.search",
+      "resource": "sandbox-local-document-set",
+      "disposition": "safely_available",
+      "detail": {"capability": "search", "target": "sandbox-local-document-set"}
+    },
+    {
+      "id": "safe.browse",
+      "resource": "sandbox-local-document-set",
+      "disposition": "safely_available",
+      "detail": {"capability": "browse", "target": "sandbox-local-document-set"}
+    },
+    {
+      "id": "safe.draft",
+      "resource": "sandbox-local-output",
+      "disposition": "safely_available",
+      "detail": {"capability": "draft", "target": "/tmp/masugate-drafts"}
+    },
+    {
+      "id": "safe.local-compute",
+      "resource": "sandbox-local-cpu",
+      "disposition": "safely_available",
+      "detail": {"capability": "local-compute", "target": "sandbox-cpu"}
+    },
+    {
+      "id": "safe.network",
+      "resource": "safe-content-network",
+      "disposition": "safely_available",
+      "detail": {"capability": "network", "target": "masugate_reference_content -> safe-content:8080"}
+    },
+    {
+      "id": "blocked.native-consequential-tools",
+      "resource": "native-tool-registry",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "could bypass declared effect ownership", "alternative": "masugate_governed_action"}
+    },
+    {
+      "id": "blocked.shell",
+      "resource": "shell-execution",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "can reach protected resources outside MasuGate", "alternative": "sandbox-local-compute"}
+    },
+    {
+      "id": "blocked.child-process",
+      "resource": "child-process-execution",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "can escape the declared tool boundary", "alternative": "sandbox-local-compute"}
+    },
+    {
+      "id": "blocked.browser-direct",
+      "resource": "browser-network",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "direct browser egress bypasses destination mediation", "alternative": "safe-content:8080"}
+    },
+    {
+      "id": "blocked.purchase-api-direct",
+      "resource": "reference-purchase-api",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "purchase must enter the MasuGate-owned route", "alternative": "masugate_governed_action"}
+    },
+    {
+      "id": "blocked.masugated-api-direct",
+      "resource": "masugate-action-api",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "agent calls cannot bypass trusted host identity", "alternative": "masugate_governed_action"}
+    },
+    {
+      "id": "blocked.provider-credentials",
+      "resource": "reference-purchase-credential",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "connector credentials are server-to-server only", "alternative": "masugate_governed_action"}
+    },
+    {
+      "id": "blocked.governance-database",
+      "resource": "masugate-governance-postgres",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "policy state is not agent-readable", "alternative": "governance receipt"}
+    },
+    {
+      "id": "blocked.protected-mounts",
+      "resource": "protected-host-mounts",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "protected files are outside the sandbox", "alternative": "safe local workspace"}
+    },
+    {
+      "id": "blocked.agent-mcp-extension",
+      "resource": "agent-supplied-mcp-and-skills",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "extensions can introduce unreviewed effect paths", "alternative": "pinned profile tools"}
+    },
+    {
+      "id": "blocked.admin-configuration",
+      "resource": "mutable-host-configuration",
+      "disposition": "intentionally_blocked",
+      "detail": {"reason": "agents may not alter their own mediation boundary", "alternative": "operator-managed deployment"}
+    },
+    {
+      "id": "unsupported.arbitrary-host-tools",
+      "resource": "unlisted-openclaw-surfaces",
+      "disposition": "unsupported_unclaimed",
+      "detail": {"reason": "only the pinned inventory is claimed", "alternative": "add and test a manifest entry"}
+    }
+  ]
+}

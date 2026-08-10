@@ -1,0 +1,5 @@
+# Generic packaged fixture for the catalog loader; not an application-host policy.
+policy reference_guard on reference.write {
+  deny not_allowed when not reference.allowed(principal.id);
+  allow otherwise;
+}

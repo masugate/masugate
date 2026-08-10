@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/deployments/openclaw-reference/containment/network-topology.schema.json",
+  "title": "MasuGate OpenClaw reference network topology",
+  "description": "The agent sandbox is alone on a no-egress internal network. The trusted Gateway joins bounded safe-content and governance networks, while the connector and purchase service occupy their own internal provider network.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "agent_network", "networks"],
+  "properties": {
+    "schema_version": {"const": "masugate.openclaw-reference.network-topology/v1"},
+    "agent_network": {"const": "masugate-openclaw-reference-agent"},
+    "networks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "masugate-openclaw-reference-agent",
+        "masugate-openclaw-reference-safe-content",
+        "masugate-openclaw-reference-governance",
+        "masugate-openclaw-reference-provider"
+      ],
+      "properties": {
+        "masugate-openclaw-reference-agent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["internal", "members"],
+          "properties": {
+            "internal": {"const": true},
+            "members": {"const": ["openclaw-session-sandbox"]}
+          }
+        },
+        "masugate-openclaw-reference-safe-content": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["internal", "members"],
+          "properties": {
+            "internal": {"const": true},
+            "members": {"const": ["openclaw-gateway", "safe-content"]}
+          }
+        },
+        "masugate-openclaw-reference-governance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["internal", "members"],
+          "properties": {
+            "internal": {"const": true},
+            "members": {
+              "const": [
+                "openclaw-gateway",
+                "masugate-governance-postgres",
+                "masugated"
+              ]
+            }
+          }
+        },
+        "masugate-openclaw-reference-provider": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["internal", "members"],
+          "properties": {
+            "internal": {"const": true},
+            "members": {
+              "const": ["reference-purchase", "reference-purchase-connector"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

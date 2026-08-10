@@ -1,0 +1,6 @@
+# Commit-guarded state is protected by a scoped hold while approval is pending.
+policy readiness_hold_guard on reference.hold {
+  deny not_permitted when not reference.permitted(args.target);
+  escalate human_review when args.require_review == true;
+  allow otherwise;
+}

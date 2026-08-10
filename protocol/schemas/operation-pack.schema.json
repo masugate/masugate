@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/operation-pack.schema.json",
+  "title": "MasuGate operation pack",
+  "description": "Framework-neutral, public semantic operation contract. Runtime loaders enforce the bounded-schema subset, a 1 MiB canonical-pack budget, and reject every extension field.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "id", "version", "compatibility", "actions"],
+  "properties": {
+    "contract_version": {"const": "masugate.operation-pack.v1"},
+    "id": {"$ref": "#/$defs/identifier"},
+    "version": {"$ref": "#/$defs/identifier"},
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route_manifest", "connector_contract"],
+      "properties": {
+        "route_manifest": {"const": "masugate.governed-route-manifest.v2"},
+        "connector_contract": {"const": "masugate.connector.v1"}
+      }
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/action"}
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:/-]+$"},
+    "action_identifier": {"type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[A-Za-z0-9._:/-]+$"},
+    "model_field": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "allOf": [
+        {"pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"},
+        {"not": {"pattern": "^(?:constructor|prototype)$"}},
+        {"not": {"pattern": "^(?:runtime|model_[a-z0-9]+(?:_[a-z0-9]+)*)$"}},
+        {"not": {"pattern": "^(?:a_?d_?a_?p_?t_?e_?r|a_?d_?a_?p_?t_?e_?r_?c_?a_?p_?a_?b_?i_?l_?i_?t_?i_?e_?s|a_?d_?a_?p_?t_?e_?r_?i_?d|a_?g_?e_?n_?t_?i_?d|a_?u_?d_?i_?t_?r_?e_?f|a_?u_?t_?h_?o_?r_?i_?z_?a_?t_?i_?o_?n|c_?o_?n_?n_?e_?c_?t_?o_?r_?i_?d|c_?o_?n_?t_?r_?a_?c_?t_?v_?e_?r_?s_?i_?o_?n|c_?r_?e_?d_?e_?n_?t_?i_?a_?l|d_?e_?c_?i_?s_?i_?o_?n|e_?f_?f_?e_?c_?t|e_?x_?e_?c_?u_?t_?i_?o_?n_?p_?o_?s_?i_?t_?i_?o_?n|i_?d_?e_?m_?p_?o_?t_?e_?n_?c_?y_?k_?e_?y|i_?n_?v_?o_?c_?a_?t_?i_?o_?n_?i_?d|l_?o_?c_?a_?t_?o_?r|o_?p_?e_?r_?a_?t_?i_?o_?n_?i_?d|p_?e_?n_?d_?i_?n_?g_?i_?d|p_?o_?l_?i_?c_?y_?i_?d|p_?o_?l_?i_?c_?y_?v_?e_?r_?s_?i_?o_?n|p_?r_?i_?n_?c_?i_?p_?a_?l|p_?r_?i_?n_?c_?i_?p_?a_?l_?i_?d|p_?r_?i_?n_?c_?i_?p_?a_?l_?r_?e_?f|p_?r_?o_?v_?i_?d_?e_?r_?i_?d|r_?e_?c_?e_?i_?p_?t|r_?e_?c_?e_?i_?p_?t_?r_?e_?f|r_?e_?p_?l_?a_?y_?e_?d|r_?e_?t_?r_?y|r_?e_?t_?r_?y_?a_?u_?t_?h_?o_?r_?i_?t_?y|r_?u_?l_?e_?i_?d|r_?u_?n_?i_?d|s_?e_?s_?s_?i_?o_?n_?i_?d|s_?e_?s_?s_?i_?o_?n_?k_?e_?y|s_?o_?u_?r_?c_?e_?i_?d|s_?o_?u_?r_?c_?e_?i_?n_?v_?o_?c_?a_?t_?i_?o_?n|s_?o_?u_?r_?c_?e_?n_?a_?m_?e_?s_?p_?a_?c_?e|s_?t_?a_?b_?l_?e_?i_?d|t_?o_?k_?e_?n|t_?o_?o_?l_?c_?a_?l_?l_?i_?d|t_?r_?a_?c_?e_?i_?d)$"}},
+        {"not": {"pattern": "^(?:[a-z0-9]+_)*(?:credential|credentials|secret|secrets|token|tokens|password|apikey|privatekey|accesskey)(?:_[a-z0-9]+)*$"}},
+        {"not": {"pattern": "^(?:[a-z0-9]+_)*(?:api_key|private_key|access_key)(?:_[a-z0-9]+)*$"}}
+      ]
+    },
+    "bounded_schema": {
+      "description": "Only object, array, string, integer, and boolean nodes are admitted. The runtime additionally bounds nesting, property count, and canonical bytes.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "properties", "required", "additionalProperties"],
+          "properties": {
+            "type": {"const": "object"},
+            "properties": {"type": "object", "minProperties": 1, "maxProperties": 128, "additionalProperties": {"$ref": "#/$defs/bounded_schema"}, "propertyNames": {"$ref": "#/$defs/model_field"}},
+            "required": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/model_field"}, "uniqueItems": true},
+            "additionalProperties": {"const": false}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "items", "maxItems"],
+          "properties": {
+            "type": {"const": "array"},
+            "items": {"$ref": "#/$defs/bounded_schema"},
+            "minItems": {"type": "integer", "minimum": 0, "maximum": 1024},
+            "maxItems": {"type": "integer", "minimum": 0, "maximum": 1024}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "maxLength"],
+          "properties": {
+            "type": {"const": "string"},
+            "minLength": {"type": "integer", "minimum": 0, "maximum": 65536},
+            "maxLength": {"type": "integer", "minimum": 0, "maximum": 65536}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {
+            "type": {"const": "integer"},
+            "minimum": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
+            "maximum": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type"],
+          "properties": {"type": {"const": "boolean"}}
+        }
+      ]
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "input_schema", "public_result_schema", "artifact_fields", "owner_position", "required_connector_capabilities", "maturity"],
+      "properties": {
+        "action": {"$ref": "#/$defs/action_identifier"},
+        "input_schema": {"allOf": [{"$ref": "#/$defs/bounded_schema"}, {"properties": {"type": {"const": "object"}}}]},
+        "public_result_schema": {"$ref": "#/$defs/bounded_schema"},
+        "artifact_fields": {"type": "array", "maxItems": 128, "items": {"$ref": "#/$defs/model_field"}, "uniqueItems": true},
+        "owner_position": {"enum": ["transactional", "protected-external"]},
+        "required_connector_capabilities": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "maturity": {"enum": ["logical-only", "reference-effect", "production-profile"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"maturity": {"const": "production-profile"}}},
+          "then": {"properties": {"owner_position": {"const": "protected-external"}}}
+        },
+        {
+          "if": {"properties": {"owner_position": {"const": "transactional"}}},
+          "then": {"properties": {"required_connector_capabilities": {"maxItems": 0}}}
+        }
+      ]
+    }
+  }
+}

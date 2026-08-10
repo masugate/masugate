@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.masugate.invalid/protocol/artifact-request.schema.json",
+  "title": "MasuGate staged operation payload request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["action", "field", "idempotency_key", "media_type", "content_base64", "adapter_invocation"],
+  "properties": {
+    "action": {"type": "string", "minLength": 1, "maxLength": 255},
+    "field": {"type": "string", "minLength": 1, "maxLength": 256},
+    "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 255},
+    "media_type": {"type": "string", "minLength": 3, "maxLength": 128},
+    "content_base64": {"type": "string", "maxLength": 11184816, "pattern": "^[A-Za-z0-9+/]*={0,2}$"},
+    "adapter_invocation": {"type": "string", "minLength": 2, "maxLength": 16384}
+  }
+}

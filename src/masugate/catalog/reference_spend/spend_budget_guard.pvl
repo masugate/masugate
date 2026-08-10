@@ -1,0 +1,8 @@
+# The bounded reference spend reference policy.  Admission must still reserve the
+# provider-owned budget atomically; this policy declares the same cap and
+# review threshold to the catalog/assembly boundary and to policy authors.
+policy spend_budget_guard on spend.purchase {
+  deny budget_cap when args.amount_cents > spend.available_cents(principal.team);
+  escalate ask_first when args.amount_cents >= 500;
+  allow otherwise;
+}

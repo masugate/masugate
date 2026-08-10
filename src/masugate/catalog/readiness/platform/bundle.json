@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.readiness.platform",
+    "version": "1.0.0",
+    "layer": "platform-safety",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {},
+    "effects": [
+      {
+        "action": "reference.write",
+        "argument_types": {"target": "String", "quantity": "Int"},
+        "owner": "masugate.reference-provider",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "quantity",
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      },
+      {
+        "action": "reference.review",
+        "argument_types": {"target": "String", "require_review": "Bool"},
+        "owner": "masugate.reference-provider",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      },
+      {
+        "action": "reference.hold",
+        "argument_types": {"target": "String", "require_review": "Bool"},
+        "owner": "masugate.reference-provider",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      }
+    ],
+    "views": [
+      {
+        "name": "reference.remaining",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "masugate.reference-provider",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "available-capacity",
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      },
+      {
+        "name": "reference.permitted",
+        "argument_types": ["String"],
+        "return_type": "Bool",
+        "owner": "masugate.reference-provider",
+        "consistency": "commit-guarded",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "commit-guarded",
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      }
+    ],
+    "certified_inputs": [
+      {
+        "name": "certified.risk",
+        "type": "String",
+        "resolution": {"kind": "provider", "capability": "certified-input-provider"}
+      }
+    ]
+  },
+  "policies": [
+    {
+      "id": "readiness_capacity_guard",
+      "version": "1.0.0",
+      "source": "capacity_guard.pvl",
+      "semantic_sha256": "2c88c7c42b20744197aaf739a57876e73dac138f71c6eb01a77375d7f935b3fd",
+      "action": "reference.write",
+      "required_views": ["reference.remaining"],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "fixture-only",
+          "statement": "Demonstrates monotone escrow admission but is not a production quota policy."
+        }
+      ]
+    },
+    {
+      "id": "readiness_review_guard",
+      "version": "1.0.0",
+      "source": "review_guard.pvl",
+      "semantic_sha256": "185122a56142448c709e95326acb7b311fb7b1a4c4fd5f8c34fa031f60c8091f",
+      "action": "reference.review",
+      "required_views": [],
+      "certified_inputs": ["certified.risk"],
+      "limitations": [
+        {
+          "class": "fixture-only",
+          "statement": "Uses a synthetic risk classification solely to exercise revalidation."
+        }
+      ]
+    },
+    {
+      "id": "readiness_hold_guard",
+      "version": "1.0.0",
+      "source": "hold_guard.pvl",
+      "semantic_sha256": "089641e55bb7228a98a9664a5a83a30a378f59004890ae0653056f9264f981e1",
+      "action": "reference.hold",
+      "required_views": ["reference.permitted"],
+      "certified_inputs": [],
+      "limitations": [
+        {
+          "class": "fixture-only",
+          "statement": "Exercises scoped-hold planning without defining a production authorization source."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@masugate/client",
+  "version": "0.1.0",
+  "description": "Zero-dependency TypeScript client for the MasuGate Governed Action Protocol",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/MasuGateGovernance/MasuGate",
+  "bugs": "https://github.com/MasuGateGovernance/MasuGate/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MasuGateGovernance/MasuGate.git",
+    "directory": "clients/typescript"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.test.json --noEmit",
+    "prepack": "npm run build",
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test .test-dist/test/*.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "typescript": "5.9.3"
+  }
+}

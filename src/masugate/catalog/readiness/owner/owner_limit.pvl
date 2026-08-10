@@ -1,0 +1,5 @@
+# Owner configuration may tighten but never replace the mandatory capacity floor.
+policy readiness_owner_limit on reference.write {
+  deny owner_limit when args.quantity > 8;
+  allow otherwise;
+}

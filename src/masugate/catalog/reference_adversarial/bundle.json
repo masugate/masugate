@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.adversarial.reference",
+    "version": "1.0.0",
+    "layer": "platform-safety",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {
+      "team": "String"
+    },
+    "effects": [
+      {
+        "action": "api_spend",
+        "argument_types": {"request_ref": "String", "service": "String", "units": "Int"},
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "units",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "action": "channel.post",
+        "argument_types": {"broadcast": "Bool", "channel": "String", "content_digest": "String"},
+        "owner": "communications",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "action": "fs.delete",
+        "argument_types": {"expected_current_digest": "String", "path": "String"},
+        "owner": "file-workspace",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "workspace-provider"}
+      },
+      {
+        "action": "fs.write",
+        "argument_types": {"content": "String", "expected_prior_digest": "String", "path": "String"},
+        "owner": "file-workspace",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "workspace-provider"}
+      },
+      {
+        "action": "http.post",
+        "argument_types": {"content_digest": "String", "destination": "String", "payload_bytes": "Int"},
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "payload_bytes",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "action": "send_message",
+        "argument_types": {"channel": "String", "content_digest": "String", "peer": "String"},
+        "owner": "communications",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": null,
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "action": "spend.purchase",
+        "argument_types": {"amount_cents": "Int", "merchant_id": "String", "request_ref": "String"},
+        "owner": "spend",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "amount_cents",
+        "resolution": {"kind": "provider", "capability": "purchase-provider"}
+      }
+    ],
+    "views": [
+      {
+        "name": "approval.policy_granted",
+        "argument_types": ["String", "String"],
+        "return_type": "Bool",
+        "owner": "approval-state",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "comms.channel_post_claimed",
+        "argument_types": ["String", "String", "String", "String"],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "comms.channel_post_count",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "comms.first_contact",
+        "argument_types": ["String", "String"],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "comms.message_count",
+        "argument_types": ["String", "String"],
+        "return_type": "Int",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "comms.peer_allowed",
+        "argument_types": ["String", "String"],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "comms.send_claimed",
+        "argument_types": ["String", "String", "String", "String", "String"],
+        "return_type": "Bool",
+        "owner": "communications",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "communications-provider"}
+      },
+      {
+        "name": "egress.limit",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "name": "egress.volume",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "name": "quota.limit",
+        "argument_types": ["String", "String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "name": "quota.used",
+        "argument_types": ["String", "String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "name": "spend.available_cents",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "spend",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "purchase-provider"}
+      },
+      {
+        "name": "velocity.count",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "name": "velocity.limit",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "operational-limits-provider"}
+      },
+      {
+        "name": "workspace.claimed",
+        "argument_types": ["String", "String"],
+        "return_type": "Bool",
+        "owner": "file-workspace",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {"kind": "provider", "capability": "workspace-provider"}
+      }
+    ],
+    "certified_inputs": [
+      {
+        "name": "certified.capability_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "capability-window-provider"}
+      },
+      {
+        "name": "certified.live_resolution_window_open",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "capability-window-provider"}
+      },
+      {
+        "name": "certified.request_time_window_open",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "capability-window-provider"}
+      }
+    ]
+  },
+  "policies": [
+    {
+      "id": "adversarial_api_spend",
+      "version": "1.0.0",
+      "source": "adversarial_api_spend.pvl",
+      "semantic_sha256": "d56c726cfd57572aefb0bd888fa6097e8a91c00bf642fbafd1b7c0dae777e2ab",
+      "action": "api_spend",
+      "required_views": ["quota.limit", "quota.used", "velocity.count", "velocity.limit"],
+      "certified_inputs": ["certified.capability_permitted", "certified.live_resolution_window_open", "certified.request_time_window_open"],
+      "limitations": [
+        {"class": "logical-units-only", "statement": "The executable reference action atomically meters declared logical units and dispatches one durable bounded reference API effect; it does not prove a customer API accepted the request or that its billing agrees."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "operational-limits",
+        "connector_id": "reference-api-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["local-cpu-without-mediated-effect", "wrong-service-within-configured-limit"]
+      }
+    },
+    {
+      "id": "adversarial_channel_post",
+      "version": "1.0.0",
+      "source": "adversarial_channel_post.pvl",
+      "semantic_sha256": "65cbd720b5a791cead4b16752ab5965881b8d873443e400e801e9ce1d58fa127",
+      "action": "channel.post",
+      "required_views": ["approval.policy_granted", "comms.channel_post_claimed", "comms.channel_post_count"],
+      "certified_inputs": [],
+      "limitations": [
+        {"class": "content-moderation", "statement": "The policy controls bounded channel state and dispatches one durable reference delivery effect, but does not establish the harmfulness, truth, or customer-service delivery of an in-rate message."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "communications",
+        "connector_id": "communications-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["harmful-inrate-content", "unmediated-channel"]
+      }
+    },
+    {
+      "id": "adversarial_http_post",
+      "version": "1.0.0",
+      "source": "adversarial_http_post.pvl",
+      "semantic_sha256": "1bf9743a00ba4aaaf9809b9bfad7003a8e8290d9576f124c1d8cce019bb1c1d9",
+      "action": "http.post",
+      "required_views": ["egress.limit", "egress.volume", "velocity.count", "velocity.limit"],
+      "certified_inputs": ["certified.capability_permitted", "certified.live_resolution_window_open", "certified.request_time_window_open"],
+      "limitations": [
+        {"class": "declared-byte-accounting", "statement": "The executable reference action meters declared payload bytes and dispatches one durable bounded reference HTTP effect; customer-network delivery and independently measured payload accounting remain out of scope."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "operational-limits",
+        "connector_id": "reference-http-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["subcap-steganography", "unmediated-channel-exfiltration"]
+      }
+    },
+    {
+      "id": "adversarial_send_message",
+      "version": "1.0.0",
+      "source": "adversarial_send_message.pvl",
+      "semantic_sha256": "2a8f303645b93258d5d024c95f15b7ba330e05588ad76b408becba84fedbe4ff",
+      "action": "send_message",
+      "required_views": ["comms.first_contact", "comms.message_count", "comms.peer_allowed", "comms.send_claimed"],
+      "certified_inputs": [],
+      "limitations": [
+        {"class": "content-moderation", "statement": "Allowlist, claim, and count controls do not classify message content or prevent a harmful allowed message."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "communications",
+        "connector_id": "communications-runner-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["harmful-inrate-content", "unmediated-channel-exfiltration"]
+      }
+    },
+    {
+      "id": "adversarial_spend_purchase",
+      "version": "1.0.0",
+      "source": "adversarial_spend_purchase.pvl",
+      "semantic_sha256": "1a608daac57fc595cd5f822d505da224c93f64bb29010f6655c59ea9d2196c84",
+      "action": "spend.purchase",
+      "required_views": ["spend.available_cents"],
+      "certified_inputs": [],
+      "limitations": [
+        {"class": "task-semantic-correctness", "statement": "A budget-valid purchase can still be the wrong item or merchant; the policy enforces the encoded financial envelope only."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "spend",
+        "connector_id": "reference-purchase-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["wrong-item-within-budget", "merchant-validity"]
+      }
+    },
+    {
+      "id": "adversarial_workspace_delete",
+      "version": "1.0.0",
+      "source": "adversarial_workspace_delete.pvl",
+      "semantic_sha256": "beb911887b117f0e4640aae39ed314a470db4b488a2511e3b07d9ffa48453907",
+      "action": "fs.delete",
+      "required_views": ["workspace.claimed"],
+      "certified_inputs": [],
+      "limitations": [
+        {"class": "host-filesystem-boundary", "statement": "The protected action dispatches one durable reference path effect, but it does not perform customer-host no-follow resolution or contain a native filesystem bypass."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "file-workspace",
+        "connector_id": "filesystem-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["host-path-resolution", "task-semantic-corruption"]
+      }
+    },
+    {
+      "id": "adversarial_workspace_write",
+      "version": "1.0.0",
+      "source": "adversarial_workspace_write.pvl",
+      "semantic_sha256": "8cac896e039a1aaeec05f3033c499d242f6061abe07bf9980ed3b505f3a42c8a",
+      "action": "fs.write",
+      "required_views": ["workspace.claimed"],
+      "certified_inputs": [],
+      "limitations": [
+        {"class": "host-filesystem-boundary", "statement": "The protected action dispatches one durable reference path effect, but it does not perform customer-host no-follow resolution or contain a native filesystem bypass."}
+      ],
+      "governance": {
+        "driver": "adversarial",
+        "coordination_domain": "masugate.spend.reference.domain.v1",
+        "provider_owner": "file-workspace",
+        "connector_id": "filesystem-v1",
+        "pending_plan": "revalidate",
+        "enforcement": {"kind": "executable"},
+        "out_of_scope_classes": ["host-path-resolution", "task-semantic-corruption"]
+      }
+    }
+  ]
+}

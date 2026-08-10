@@ -1,0 +1,8 @@
+{
+  "kind": "cancellation",
+  "locator": {
+    "operation_id": "00000000-0000-4000-8000-100000000001",
+    "pending_id": "00000000-0000-4000-8000-200000000001"
+  },
+  "accepted": true
+}

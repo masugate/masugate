@@ -1,0 +1,119 @@
+{
+  "id": "masugate",
+  "name": "MasuGate",
+  "description": "MasuGate-owned governed actions with trusted OpenClaw fleet identity.",
+  "version": "0.1.0",
+  "contracts": {
+    "tools": ["masugate_governed_action", "masugate_resume_pending"]
+  },
+  "toolMetadata": {
+    "masugate_governed_action": {
+      "optional": true
+    },
+    "masugate_resume_pending": {
+      "optional": true
+    }
+  },
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "oneOf": [
+      {
+        "required": ["routes"],
+        "not": {"required": ["compiledRouteManifest"]}
+      },
+      {
+        "required": ["compiledRouteManifest"],
+        "not": {"required": ["routes"]}
+      }
+    ],
+    "properties": {
+      "masugatedBaseUrl": { "type": "string", "minLength": 1 },
+      "agents": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": { "type": "string", "minLength": 1 }
+      },
+      "routes": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["action", "arguments", "owner"],
+          "properties": {
+            "action": { "type": "string", "minLength": 1 },
+            "arguments": {
+              "type": "object",
+              "propertyNames": {
+                "not": {
+                  "enum": [
+                    "agentId",
+                    "authorization",
+                    "connectorId",
+                    "credential",
+                    "idempotencyKey",
+                    "idempotency_key",
+                    "principal",
+                    "principalId",
+                    "providerId",
+                    "runId",
+                    "sessionId",
+                    "sessionKey",
+                    "stableId",
+                    "token",
+                    "toolCallId",
+                    "traceId"
+                  ]
+                }
+              },
+              "additionalProperties": {
+                "enum": ["string", "integer", "boolean"]
+              }
+            },
+            "owner": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["providerId", "position"],
+                  "properties": {
+                    "providerId": { "type": "string", "minLength": 1 },
+                    "position": { "const": "transactional" }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["providerId", "position", "connectorId"],
+                  "properties": {
+                    "providerId": { "type": "string", "minLength": 1 },
+                    "position": { "const": "protected-external" },
+                    "connectorId": { "type": "string", "minLength": 1 }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "compiledRouteManifest": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "Exact masugate.governed-route-manifest.v2 compiler output; runtime validation rejects every unsupported field."
+      },
+      "nativeApproval": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resolverTokenEnv", "timeoutMs"],
+        "properties": {
+          "resolverTokenEnv": {"type": "string", "minLength": 1},
+          "timeoutMs": {"type": "integer", "minimum": 1, "maximum": 600000}
+        }
+      }
+    }
+  }
+}

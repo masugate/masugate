@@ -1,0 +1,9 @@
+policy adversarial_http_post on http.post {
+  deny capability_not_permitted when certified.capability_permitted == false;
+  deny request_time_window_closed when certified.request_time_window_open == false;
+  deny live_resolution_window_closed when certified.live_resolution_window_open == false;
+  deny egress_volume_exhausted when egress.volume(principal.id) + args.payload_bytes > egress.limit(principal.id);
+  deny cross_action_velocity_cap when velocity.count(principal.id) >= velocity.limit(principal.id);
+  escalate unusually_large_egress when args.payload_bytes >= 1048576;
+  allow otherwise;
+}

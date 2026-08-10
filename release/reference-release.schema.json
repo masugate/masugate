@@ -1,0 +1,628 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "release_id",
+    "channel",
+    "runtime_target",
+    "artifacts",
+    "reference_demo_spend_authorization",
+    "catalogs",
+    "provider_modules",
+    "sandbox_profile",
+    "container_images",
+    "container_artifact",
+    "locks",
+    "package_catalog",
+    "provenance",
+    "rollback"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "masugate.reference-release/v1"
+    },
+    "release_id": {
+      "const": "masugate-openclaw-reference/0.1.0"
+    },
+    "channel": {
+      "const": "research-preview"
+    },
+    "runtime_target": {
+      "type": "object",
+      "required": [
+        "os",
+        "architecture",
+        "python_abi"
+      ],
+      "properties": {
+        "os": {
+          "const": "linux"
+        },
+        "architecture": {
+          "const": "amd64"
+        },
+        "python_abi": {
+          "const": "cp312"
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": [
+        "platform",
+        "connector_sdk",
+        "python_client",
+        "adapter_core",
+        "langchain_adapter",
+        "agent_framework_adapter",
+        "crewai_adapter",
+        "google_calendar_connector",
+        "stripe_payment_intent_connector",
+        "filesystem_connector",
+        "calendar_operation",
+        "spend_operation",
+        "filesystem_operation",
+        "typescript_client",
+        "typescript_adapter_core",
+        "mcp_gateway",
+        "openclaw_adapter",
+        "reference_deployment"
+      ],
+      "properties": {
+        "platform": {
+          "type": "object",
+          "required": [
+            "distribution",
+            "version",
+            "entry_point",
+            "protocol_contract",
+            "connector_sdk_dependency"
+          ],
+          "properties": {
+            "distribution": {
+              "const": "masugate"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "entry_point": {
+              "const": "masugated"
+            },
+            "protocol_contract": {
+              "const": "masugate.host-adapter.v1"
+            },
+            "connector_sdk_dependency": {
+              "const": "masugate-connector-sdk==0.1.0"
+            }
+          },
+          "additionalProperties": false
+        },
+        "connector_sdk": {
+          "type": "object",
+          "required": [
+            "distribution",
+            "version"
+          ],
+          "properties": {
+            "distribution": {
+              "const": "masugate-connector-sdk"
+            },
+            "version": {
+              "const": "0.1.0"
+            }
+          },
+          "additionalProperties": false
+        },
+        "python_client": {
+          "type": "object",
+          "required": [
+            "distribution",
+            "version"
+          ],
+          "properties": {
+            "distribution": {
+              "const": "masugate-client"
+            },
+            "version": {
+              "const": "0.1.0"
+            }
+          },
+          "additionalProperties": false
+        },
+        "adapter_core": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-adapter-core"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "langchain_adapter": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-langchain"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "agent_framework_adapter": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-agent-framework"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "crewai_adapter": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-crewai"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "google_calendar_connector": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-connector-google-calendar"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "stripe_payment_intent_connector": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-connector-stripe-payment-intent"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "filesystem_connector": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-connector-filesystem"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "calendar_operation": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-operation-calendar"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "spend_operation": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-operation-spend"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "filesystem_operation": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {"const": "masugate-operation-filesystem"},
+            "version": {"const": "0.1.0"}
+          },
+          "additionalProperties": false
+        },
+        "typescript_client": {
+          "type": "object",
+          "required": [
+            "package",
+            "version"
+          ],
+          "properties": {
+            "package": {
+              "const": "@masugate/client"
+            },
+            "version": {
+              "const": "0.1.0"
+            }
+          },
+          "additionalProperties": false
+        },
+        "typescript_adapter_core": {
+          "type": "object",
+          "required": [
+            "package",
+            "version",
+            "client_dependency"
+          ],
+          "properties": {
+            "package": {
+              "const": "@masugate/adapter-core"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "client_dependency": {
+              "const": "^0.1.0"
+            }
+          },
+          "additionalProperties": false
+        },
+        "mcp_gateway": {
+          "type": "object",
+          "required": [
+            "package",
+            "version",
+            "client_dependency"
+          ],
+          "properties": {
+            "package": {
+              "const": "@masugate/mcp-gateway"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "client_dependency": {
+              "const": "0.1.0"
+            }
+          },
+          "additionalProperties": false
+        },
+        "openclaw_adapter": {
+          "type": "object",
+          "required": [
+            "package",
+            "version",
+            "client_dependency",
+            "adapter_core_dependency",
+            "bundled_dependencies",
+            "openclaw_peer"
+          ],
+          "properties": {
+            "package": {
+              "const": "@masugate/openclaw"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "client_dependency": {
+              "const": "0.1.0"
+            },
+            "adapter_core_dependency": {
+              "const": "0.1.0"
+            },
+            "bundled_dependencies": {
+              "const": [
+                "@masugate/adapter-core",
+                "@masugate/client",
+                "typebox"
+              ]
+            },
+            "openclaw_peer": {
+              "const": "2026.7.1"
+            }
+          },
+          "additionalProperties": false
+        },
+        "reference_deployment": {
+          "type": "object",
+          "required": [
+            "distribution",
+            "version",
+            "platform_dependency",
+            "python_client_dependency",
+            "schema"
+          ],
+          "properties": {
+            "distribution": {
+              "const": "masugate-openclaw-reference"
+            },
+            "version": {
+              "const": "0.1.0"
+            },
+            "platform_dependency": {
+              "const": "masugate==0.1.0"
+            },
+            "python_client_dependency": {
+              "const": "masugate-client==0.1.0"
+            },
+            "schema": {
+              "type": "object",
+              "required": [
+                "id",
+                "version",
+                "boundary",
+                "metadata_table"
+              ],
+              "properties": {
+                "id": {
+                  "const": "masugate-openclaw-reference"
+                },
+                "version": {
+                  "const": 1
+                },
+                "boundary": {
+                  "const": "clean-install-only"
+                },
+                "metadata_table": {
+                  "const": "masugate_release_metadata"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "reference_demo_spend_authorization": {
+      "type": "object",
+      "required": [
+        "configuration",
+        "configuration_digest",
+        "policy"
+      ],
+      "properties": {
+        "configuration": {
+          "type": "object",
+          "required": [
+            "approval_threshold_cents",
+            "approval_timeout_seconds",
+            "budget_limit_cents",
+            "scope_derivation"
+          ],
+          "properties": {
+            "approval_threshold_cents": {
+              "const": 500
+            },
+            "approval_timeout_seconds": {
+              "const": 600
+            },
+            "budget_limit_cents": {
+              "const": 10000
+            },
+            "scope_derivation": {
+              "const": "masugate.spend.reference.scopes.v1"
+            }
+          },
+          "additionalProperties": false
+        },
+        "configuration_digest": {
+          "const": "ef3ed59d53a0818b903231be46ae791ad63e909b17fe38fe95d0b4f4441fa423"
+        },
+        "policy": {
+          "type": "object",
+          "required": [
+            "bundle_digest",
+            "bundle_id",
+            "bundle_version",
+            "layer",
+            "mode",
+            "policy_declared_version",
+            "policy_digest",
+            "policy_id",
+            "policy_runtime_version"
+          ],
+          "properties": {
+            "bundle_digest": {
+              "const": "04062dec66e932401fb5913dcaab0208218d38eb30e00f32873081a029b7bd5d"
+            },
+            "bundle_id": {
+              "const": "masugate.spend.reference"
+            },
+            "bundle_version": {
+              "const": "1.0.0"
+            },
+            "layer": {
+              "const": "owner"
+            },
+            "mode": {
+              "const": "configurable"
+            },
+            "policy_declared_version": {
+              "const": "1.0.0"
+            },
+            "policy_digest": {
+              "const": "5c072d7dbd39c0b274cfd9d078ed149536639c42c4ebefa802653b7693b16094"
+            },
+            "policy_id": {
+              "const": "spend_budget_guard"
+            },
+            "policy_runtime_version": {
+              "const": "5c072d7dbd39c0b2"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "catalogs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9.@_-]+$"
+      }
+    },
+    "provider_modules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "implementation_version"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+$"
+          },
+          "implementation_version": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sandbox_profile": {
+      "type": "object",
+      "required": [
+        "containment_manifest",
+        "profile"
+      ],
+      "properties": {
+        "containment_manifest": {
+          "const": "integrations/openclaw-reference/containment/manifest.json"
+        },
+        "profile": {
+          "const": "integrations/openclaw-reference/containment/profile.json"
+        }
+      },
+      "additionalProperties": false
+    },
+    "container_images": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "@sha256:[0-9a-f]{64}$"
+      }
+    },
+    "container_artifact": {
+      "type": "object",
+      "required": [
+        "archive",
+        "images"
+      ],
+      "properties": {
+        "archive": {
+          "const": "masugate-reference-images.tar"
+        },
+        "images": {
+          "type": "array",
+          "minItems": 4,
+          "items": {
+            "type": "object",
+            "required": [
+              "role",
+              "dockerfile",
+              "compose_services"
+            ],
+            "properties": {
+              "role": {
+                "enum": [
+                  "agent-sandbox",
+                  "gateway",
+                  "safe-content",
+                  "reference"
+                ]
+              },
+              "dockerfile": {
+                "type": "string",
+                "pattern": "^Dockerfile\\.reference_demo-[a-z-]+$"
+              },
+              "compose_services": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+$"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "locks": {
+      "type": "object",
+      "required": [
+        "python",
+        "npm",
+        "gateway_shrinkwrap",
+        "openclaw_contract",
+        "npm_clean_consumer"
+      ],
+      "properties": {
+        "python": {
+          "const": "release/requirements/pylock.masugate-platform.toml"
+        },
+        "npm": {
+          "const": "package-lock.json"
+        },
+        "gateway_shrinkwrap": {
+          "const": "gateway/npm-shrinkwrap.json"
+        },
+        "openclaw_contract": {
+          "const": "integrations/openclaw-contract/package-lock.json"
+        },
+        "npm_clean_consumer": {
+          "const": "release/npm-clean-consumer-lock.json"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "generator",
+        "source_revision",
+        "staging_realization_revision",
+        "checksums",
+        "sbom",
+        "sbom_schema",
+        "sbom_schema_sha256"
+      ],
+      "properties": {
+        "generator": {
+          "const": "scripts/build-reference-release.py"
+        },
+        "source_revision": {
+          "const": "recorded-at-build-or-supplied-origin"
+        },
+        "staging_realization_revision": {
+          "const": "recorded-at-build"
+        },
+        "checksums": {
+          "const": "SHA-256"
+        },
+        "sbom": {
+          "const": "CycloneDX 1.5 JSON"
+        },
+        "sbom_schema": {
+          "const": "release/schemas/cyclonedx/bom-1.5.schema.json"
+        },
+        "sbom_schema_sha256": {
+          "const": "067f7824b08653839ea050ae9e09ca48375eadc2652b0e2a299476e7db90335b"
+        }
+      },
+      "additionalProperties": false
+    },
+    "package_catalog": {
+      "const": "release/package-catalog.json"
+    },
+    "rollback": {
+      "type": "object",
+      "required": [
+        "database",
+        "artifacts"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

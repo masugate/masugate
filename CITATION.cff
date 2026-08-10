@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use MasuGate, please cite the accompanying paper and this software release."
+authors:
+  - family-names: Peng
+    given-names: Yuxiang
+  - family-names: Wu
+    given-names: Xiaodi
+title: "MasuGate"
+type: software
+version: "0.1.0"
+date-released: "2026-08-09"
+license: "Apache-2.0"
+repository-code: "https://github.com/MasuGateGovernance/MasuGate"
+url: "https://github.com/MasuGateGovernance/MasuGate"
+preferred-citation:
+  type: article
+  title: "Stateful Governance for Concurrent Agentic Systems"
+  authors:
+    - family-names: Peng
+      given-names: Yuxiang
+    - family-names: Wu
+      given-names: Xiaodi
+  date-published: "2026-08-03"
+  url: "https://arxiv.org/abs/2608.02764"

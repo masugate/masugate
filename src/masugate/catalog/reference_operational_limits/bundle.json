@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "bundle": {
+    "id": "masugate.operational-limits.reference",
+    "version": "1.0.0",
+    "layer": "deployment-regulatory",
+    "mode": "mandatory"
+  },
+  "contracts": {
+    "principal_attributes": {
+      "team": "String"
+    },
+    "effects": [
+      {
+        "action": "api_spend",
+        "argument_types": {
+          "request_ref": "String",
+          "service": "String",
+          "units": "Int"
+        },
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "units",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      },
+      {
+        "action": "http.post",
+        "argument_types": {
+          "content_digest": "String",
+          "destination": "String",
+          "payload_bytes": "Int"
+        },
+        "owner": "operational-limits",
+        "required_guarantee": "policy-state-serializable",
+        "consumable_arg": "payload_bytes",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      }
+    ],
+    "views": [
+      {
+        "name": "egress.limit",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      },
+      {
+        "name": "egress.volume",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      },
+      {
+        "name": "quota.limit",
+        "argument_types": ["String", "String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      },
+      {
+        "name": "quota.used",
+        "argument_types": ["String", "String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      },
+      {
+        "name": "velocity.count",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      },
+      {
+        "name": "velocity.limit",
+        "argument_types": ["String"],
+        "return_type": "Int",
+        "owner": "operational-limits",
+        "consistency": "scoped-policy-state",
+        "max_latency_ms": 100,
+        "bounded": true,
+        "reservation_kind": "unsupported",
+        "resolution": {
+          "kind": "provider",
+          "capability": "operational-limits-provider"
+        }
+      }
+    ],
+    "certified_inputs": [
+      {
+        "name": "certified.capability_permitted",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "capability-window-provider"}
+      },
+      {
+        "name": "certified.live_resolution_window_open",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "capability-window-provider"}
+      },
+      {
+        "name": "certified.request_time_window_open",
+        "type": "Bool",
+        "resolution": {"kind": "provider", "capability": "capability-window-provider"}
+      }
+    ]
+  },
+  "policies": [
+    {
+      "id": "api_spend_reference",
+      "version": "1.0.0",
+      "source": "api_spend_reference.pvl",
+      "semantic_sha256": "8b1e40707f816f08f452d2d1fc56b429a3b3044d86d8dc982f0c3b15ea9dd686",
+      "action": "api_spend",
+      "required_views": ["quota.limit", "quota.used", "velocity.count", "velocity.limit"],
+      "certified_inputs": [
+        "certified.capability_permitted",
+        "certified.live_resolution_window_open",
+        "certified.request_time_window_open"
+      ],
+      "limitations": [
+        {
+          "class": "effect-boundary",
+          "statement": "The transactional reference action records logical service units only; it neither calls a metered API nor proves a remote service accepted a request."
+        }
+      ]
+    },
+    {
+      "id": "http_post_reference",
+      "version": "1.0.0",
+      "source": "http_post_reference.pvl",
+      "semantic_sha256": "3481b2036805a878575fa2fe181dfd7858b8354c85f9e0237f15076e03a5f4ca",
+      "action": "http.post",
+      "required_views": ["egress.limit", "egress.volume", "velocity.count", "velocity.limit"],
+      "certified_inputs": [
+        "certified.capability_permitted",
+        "certified.live_resolution_window_open",
+        "certified.request_time_window_open"
+      ],
+      "limitations": [
+        {
+          "class": "effect-boundary",
+          "statement": "The transactional reference action records declared outbound bytes only; a later protected connector must bind actual payload accounting to remote delivery."
+        }
+      ]
+    }
+  ]
+}

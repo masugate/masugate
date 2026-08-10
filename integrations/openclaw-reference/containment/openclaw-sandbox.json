@@ -1,0 +1,160 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "reference_containment-full/reference_containment-full"
+      },
+      "sandbox": {
+        "mode": "all",
+        "scope": "session",
+        "backend": "docker",
+        "workspaceAccess": "none",
+        "docker": {
+          "image": "masugate-openclaw-reference-agent-sandbox:reference_containment",
+          "containerPrefix": "masugate-openclaw-reference-agent-",
+          "network": "masugate-openclaw-reference-agent",
+          "readOnlyRoot": true,
+          "capDrop": ["ALL"],
+          "tmpfs": ["/tmp"],
+          "env": {
+            "LANG": "C.UTF-8",
+            "TZ": "UTC"
+          }
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "buyer-alpha",
+        "default": true
+      },
+      {
+        "id": "buyer-narrow",
+        "model": {
+          "primary": "reference_containment-narrow/reference_containment-narrow"
+        },
+        "tools": {
+          "sandbox": {
+            "tools": {
+              "allow": ["read"],
+              "deny": ["image"]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "gateway": {
+    "http": {
+      "endpoints": {
+        "chatCompletions": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "reference_containment-full": {
+        "baseUrl": "http://127.0.0.1:18790/v1",
+        "apiKey": "reference-containment-loopback-model",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "reference_containment-full",
+            "name": "reference containment deterministic containment fixture",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 131072,
+            "maxTokens": 4096,
+            "compat": {
+              "requiresStringContent": true
+            }
+          }
+        ]
+      },
+      "reference_containment-narrow": {
+        "baseUrl": "http://127.0.0.1:18791/v1",
+        "apiKey": "reference-containment-loopback-model",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "reference_containment-narrow",
+            "name": "reference containment narrow containment fixture",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 131072,
+            "maxTokens": 4096,
+            "compat": {
+              "requiresStringContent": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "allow": ["masugate", "masugate-reference-content"],
+    "entries": {
+      "masugate": {
+        "enabled": true,
+        "config": {
+          "masugatedBaseUrl": "http://masugated:8000",
+          "agents": {
+            "buyer-alpha": "MASUGATE_BUYER_ALPHA_TOKEN"
+          },
+          "routes": {
+            "purchase": {
+              "action": "spend.purchase",
+              "arguments": {
+                "amount_cents": "integer",
+                "merchant_id": "string",
+                "request_ref": "string"
+              },
+              "owner": {
+                "providerId": "masugate.spend.reference",
+                "position": "protected-external",
+                "connectorId": "reference-purchase-v1"
+              }
+            }
+          }
+        }
+      },
+      "masugate-reference-content": {
+        "enabled": true,
+        "config": {
+          "safeContentBaseUrl": "http://safe-content:8080",
+          "documents": {
+            "procurement": "/reference/procurement",
+            "travel": "/reference/travel"
+          }
+        }
+      }
+    }
+  },
+  "tools": {
+    "allow": ["read", "masugate_governed_action", "masugate_reference_content"],
+    "elevated": {
+      "enabled": false
+    },
+    "sandbox": {
+      "tools": {
+        "allow": ["read", "masugate_governed_action", "masugate_reference_content"],
+        "deny": ["image"]
+      }
+    }
+  }
+}

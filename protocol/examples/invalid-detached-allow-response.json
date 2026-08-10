@@ -1,0 +1,14 @@
+{
+  "operation_id": "55555555-5555-4555-8555-555555555555",
+  "status": "denied",
+  "decision": {
+    "effect": "allow",
+    "policy_id": "team_budget",
+    "policy_version": "f72bfbef3d3570fe5ad6be5c8c17de3e0c9c159c07dba45a7e3f47bb5f37c664",
+    "rule_id": "otherwise",
+    "reason": "detached allow tokens are forbidden"
+  },
+  "payload": {},
+  "audit_ref": "/v1/audit/55555555-5555-4555-8555-555555555555",
+  "replayed": false
+}

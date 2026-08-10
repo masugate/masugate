@@ -1,0 +1,45 @@
+{
+  "schema_version": "masugate.openclaw-reference.profile/v1",
+  "agent_sandbox": {
+    "enabled": true,
+    "read_only_root": true,
+    "cap_drop": ["ALL"],
+    "no_new_privileges": true,
+    "network": {
+      "default": "deny",
+      "allowed_destinations": []
+    },
+    "mounts": [
+      {
+        "source": "openclaw-managed-session-copy",
+        "target": "/workspace",
+        "read_only": true
+      }
+    ],
+    "environment_allowlist": ["LANG", "TZ"],
+    "tool_allowlist": ["read", "masugate_governed_action", "masugate_reference_content"],
+    "blocked_surfaces": [
+      "blocked.admin-configuration",
+      "blocked.agent-mcp-extension",
+      "blocked.browser-direct",
+      "blocked.child-process",
+      "blocked.governance-database",
+      "blocked.native-consequential-tools",
+      "blocked.protected-mounts",
+      "blocked.provider-credentials",
+      "blocked.purchase-api-direct",
+      "blocked.masugated-api-direct",
+      "blocked.shell"
+    ]
+  },
+  "gateway": {
+    "tool_allowlist": ["masugate_governed_action", "masugate_reference_content"],
+    "environment": ["OPENCLAW_GATEWAY_TOKEN", "MASUGATE_BUYER_ALPHA_TOKEN"],
+    "host_control_mounts": ["docker-daemon-socket"],
+    "allowed_destinations": ["masugated:8000", "safe-content:8080"]
+  },
+  "connector": {
+    "environment": ["REFERENCE_PURCHASE_SERVICE_TOKEN"],
+    "allowed_destinations": ["reference-purchase:8081"]
+  }
+}

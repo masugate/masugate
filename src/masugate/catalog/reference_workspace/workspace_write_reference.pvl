@@ -1,0 +1,4 @@
+policy workspace_write_reference on fs.write {
+  deny missing_owned_claim when workspace.claimed(principal.id, args.path) == false;
+  allow otherwise;
+}

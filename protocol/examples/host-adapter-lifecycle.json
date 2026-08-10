@@ -1,0 +1,25 @@
+{
+  "kind": "lifecycle",
+  "invocation": {
+    "principal": {"id": "adapter:buyer"},
+    "source": {"namespace": "canary", "id": "call-1"},
+    "adapter": {"id": "masugate.canary", "contract_version": "masugate.host-adapter.v1", "capabilities": ["cancellation", "locator", "receipt"]},
+    "action": {"name": "canary.pending", "arguments": {"amount": 7}}
+  },
+  "result": {
+    "operation_id": "00000000-0000-4000-8000-100000000001",
+    "pending_id": "00000000-0000-4000-8000-200000000001",
+    "status": "pending",
+    "decision": {
+      "effect": "escalate",
+      "policy_id": "contract-canary",
+      "policy_version": "v1",
+      "rule_id": "canary-pending",
+      "reason": "scripted adapter conformance outcome"
+    },
+    "payload": {"amount": 7},
+    "audit_ref": "/v1/audit/00000000-0000-4000-8000-100000000001",
+    "replayed": false
+  },
+  "locator": {"operation_id": "00000000-0000-4000-8000-100000000001", "pending_id": "00000000-0000-4000-8000-200000000001"}
+}

@@ -1,0 +1,6 @@
+policy customer_send_message on send_message {
+  deny owner_capability_denied when owner.action_permitted(principal.id, "send_message") == false;
+  deny owner_target_denied when owner.target_permitted(principal.id, "send_message", args.peer) == false;
+  escalate owner_ask_first when owner.approval_required(principal.id, "send_message") == true;
+  allow otherwise;
+}

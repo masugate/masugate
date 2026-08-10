@@ -1,0 +1,50 @@
+{
+  "conformance_version": "masugate.adapter-core-conformance.v1",
+  "scenarios": [
+    {"id": "canonical-bytes", "expected": "match"},
+    {"id": "forged-fields", "expected": "rejected"},
+    {"id": "exact-retry", "expected": "same-operation"},
+    {"id": "changed-content", "expected": "conflict"},
+    {"id": "distinct-calls", "expected": "distinct-operations"},
+    {"id": "lifecycle-committed", "expected": "committed"},
+    {"id": "lifecycle-denied", "expected": "denied"},
+    {"id": "lifecycle-pending", "expected": "pending"},
+    {"id": "lifecycle-in-progress", "expected": "in_progress"},
+    {"id": "lifecycle-outcome-unknown", "expected": "outcome_unknown"},
+    {"id": "pending-resume", "expected": "same-locator"},
+    {"id": "pending-terminal", "expected": "same-operation"},
+    {"id": "locator-checks", "expected": "mismatch-rejected"},
+    {"id": "capability-gates", "expected": "unsupported-rejected"}
+  ],
+  "manifest": {
+    "contract_version": "masugate.governed-route-manifest.v1",
+    "routes": [
+      {
+        "host_tool": "purchase",
+        "action": "spend.purchase",
+        "arguments": {
+          "merchant_id": "string",
+          "amount_cents": "integer"
+        },
+        "owner": {
+          "provider_id": "spend-v1",
+          "position": "protected-external",
+          "connector_id": "purchase-v1"
+        }
+      }
+    ]
+  },
+  "trusted_invocation": {
+    "principal_id": "adapter:buyer",
+    "source_namespace": "adapter-core-conformance",
+    "source_id": "call-001",
+    "adapter_id": "masugate.adapter.conformance",
+    "capabilities": ["cancellation", "locator", "pending-presentation", "receipt"]
+  },
+  "model_arguments": {
+    "merchant_id": "merchant-42",
+    "amount_cents": 1250
+  },
+  "canonical_route_manifest": "{\"contract_version\":\"masugate.governed-route-manifest.v1\",\"routes\":[{\"action\":\"spend.purchase\",\"arguments\":{\"amount_cents\":\"integer\",\"merchant_id\":\"string\"},\"host_tool\":\"purchase\",\"owner\":{\"connector_id\":\"purchase-v1\",\"position\":\"protected-external\",\"provider_id\":\"spend-v1\"}}]}",
+  "canonical_trusted_invocation": "{\"action\":{\"arguments\":{\"amount_cents\":1250,\"merchant_id\":\"merchant-42\"},\"name\":\"spend.purchase\"},\"adapter\":{\"capabilities\":[\"cancellation\",\"locator\",\"pending-presentation\",\"receipt\"],\"contract_version\":\"masugate.host-adapter.v1\",\"id\":\"masugate.adapter.conformance\"},\"principal\":{\"id\":\"adapter:buyer\"},\"source\":{\"id\":\"call-001\",\"namespace\":\"adapter-core-conformance\"}}"
+}

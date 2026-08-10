@@ -1,0 +1,24 @@
+FROM python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7
+
+WORKDIR /opt/masugate
+
+# The worker image is assembled only from three verified first-party wheels
+# and the locked runtime wheelhouse. The recipe never copies a source checkout.
+COPY artifacts/python/masugate/*.whl /artifacts/
+COPY artifacts/python/masugate-connector-sdk/*.whl /artifacts/
+COPY artifacts/python/masugate-connector-filesystem/*.whl /artifacts/
+COPY artifacts/python/runtime/wheelhouse/ /wheelhouse/
+COPY artifacts/python/runtime/requirements.txt /runtime-requirements.txt
+COPY worker-entrypoint.sh /usr/local/bin/masugate-connector-worker-entrypoint
+RUN pip install --no-cache-dir --no-index --find-links=/wheelhouse \
+        --require-hashes -r /runtime-requirements.txt \
+ && pip install --no-cache-dir --no-index --no-deps \
+        /artifacts/masugate_connector_sdk-*.whl /artifacts/masugate-*.whl \
+        /artifacts/masugate_connector_filesystem-*.whl \
+ && pip check \
+ && adduser --uid 10001 --disabled-password --gecos '' masugate \
+ && chmod 0555 /usr/local/bin/masugate-connector-worker-entrypoint
+
+USER 10001:10001
+ENTRYPOINT ["/usr/local/bin/masugate-connector-worker-entrypoint"]
+CMD ["--version"]

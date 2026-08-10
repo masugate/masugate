@@ -1,0 +1,5 @@
+# Verified implementation artifact for the bounded CrewAI profile. Install
+# this file with ``pip install --no-deps --require-hashes -r requirements.txt``
+# before installing this package so the CrewAI wheel itself is byte-pinned.
+crewai==1.15.6 \
+    --hash=sha256:966183d71ceb855672e3ea7c99abadeb1d574df7a5657489f1ae6901cb51e919
