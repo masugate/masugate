@@ -16,9 +16,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/MasuGateGovernance/MasuGate"
-Source = "https://github.com/MasuGateGovernance/MasuGate"
-Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+Homepage = "https://github.com/masugate/masugate"
+Source = "https://github.com/masugate/masugate"
+Issues = "https://github.com/masugate/masugate/issues"
 
 [project.optional-dependencies]
 test = [

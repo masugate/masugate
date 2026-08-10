@@ -109,9 +109,9 @@
       "budget_limit_cents": 10000,
       "scope_derivation": "masugate.spend.reference.scopes.v1"
     },
-    "configuration_digest": "ef3ed59d53a0818b903231be46ae791ad63e909b17fe38fe95d0b4f4441fa423",
+    "configuration_digest": "2675d08a41756224ab7fc1b15cdb5f43e724aac1eda4ecd3674ef5da35d914fc",
     "policy": {
-      "bundle_digest": "04062dec66e932401fb5913dcaab0208218d38eb30e00f32873081a029b7bd5d",
+      "bundle_digest": "5011ae3414f1745c581bf553c40ec75574aa29580ea6884e40f3ed112b2bc7f8",
       "bundle_id": "masugate.spend.reference",
       "bundle_version": "1.0.0",
       "layer": "owner",

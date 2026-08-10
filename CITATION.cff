@@ -8,10 +8,10 @@ authors:
 title: "MasuGate"
 type: software
 version: "0.1.0"
-date-released: "2026-08-09"
+date-released: "2026-08-10"
 license: "Apache-2.0"
-repository-code: "https://github.com/MasuGateGovernance/MasuGate"
-url: "https://github.com/MasuGateGovernance/MasuGate"
+repository-code: "https://github.com/masugate/masugate"
+url: "https://github.com/masugate/masugate"
 preferred-citation:
   type: article
   title: "Stateful Governance for Concurrent Agentic Systems"

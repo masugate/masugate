@@ -13,9 +13,9 @@ license = { text = "Apache-2.0" }
 dependencies = ["masugate==0.1.0", "masugate-connector-sdk==0.1.0"]
 
 [project.urls]
-Homepage = "https://github.com/MasuGateGovernance/MasuGate"
-Source = "https://github.com/MasuGateGovernance/MasuGate"
-Issues = "https://github.com/MasuGateGovernance/MasuGate/issues"
+Homepage = "https://github.com/masugate/masugate"
+Source = "https://github.com/masugate/masugate"
+Issues = "https://github.com/masugate/masugate/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/masugate_operation_calendar"]

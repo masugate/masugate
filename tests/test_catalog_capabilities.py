@@ -51,7 +51,7 @@ def test_catalog_provider_resolutions_use_named_capabilities() -> None:
     trusted = load_trusted_catalog(profile)
     assert (
         trusted.bundles[0].digest
-        == "8434644bdc4fe291065ba38e35572b456cac4b52bdf22a0847c675d98626f3ce"
+        == "3c67110b4fe72113b9d741baf7345cbeb59820c9a404eb0b2c9be95640da6f94"
     )
 
 

@@ -103,16 +103,16 @@ def test_release_control_verifier_rejects_misnested_project_dependencies(
         "name = \"candidate\"\n"
         "version = \"0.1.0\"\n\n"
         "[project.urls]\n"
-        "Homepage = \"https://github.com/MasuGateGovernance/MasuGate\"\n"
-        "Source = \"https://github.com/MasuGateGovernance/MasuGate\"\n"
-        "Issues = \"https://github.com/MasuGateGovernance/MasuGate/issues\"\n"
+        "Homepage = \"https://github.com/masugate/masugate\"\n"
+        "Source = \"https://github.com/masugate/masugate\"\n"
+        "Issues = \"https://github.com/masugate/masugate/issues\"\n"
         "dependencies = []\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(controls, "ROOT", tmp_path)
 
     with pytest.raises(controls.ReleaseControlError, match="Python package dependencies are invalid"):
-        controls._validate_public_python_metadata()
+        controls._validate_project_python_metadata()
 
 
 def test_release_control_verifier_rejects_a_scheduled_disabled_workflow(

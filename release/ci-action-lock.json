@@ -1,6 +1,6 @@
 {
   "schema_version": "masugate.ci-action-lock/v1",
-  "status": "public-source-activation",
+  "status": "source-release-staged",
   "resolution": {
     "method": "git ls-remote <repository> refs/tags/<resolved_tag>",
     "source_host": "https://github.com",
@@ -13,7 +13,7 @@
     {"repository": "actions/upload-artifact", "inherited_ref": "v4", "resolved_tag": "v4.6.2", "commit": "ea165f8d65b6e75b540449e92b4886f43607fa02"}
   ],
   "activation": {
-    "requires": ["explicit public-source authorization", "fresh action-ref verification", "reviewed repository controls"],
+    "requires": ["explicit public-release authorization", "fresh action-ref verification", "repository visibility and protected-branch review"],
     "prohibits": ["mutable action references", "unreviewed action changes", "registry or container publication"]
   }
 }

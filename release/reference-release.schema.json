@@ -398,7 +398,7 @@
           "additionalProperties": false
         },
         "configuration_digest": {
-          "const": "ef3ed59d53a0818b903231be46ae791ad63e909b17fe38fe95d0b4f4441fa423"
+          "const": "2675d08a41756224ab7fc1b15cdb5f43e724aac1eda4ecd3674ef5da35d914fc"
         },
         "policy": {
           "type": "object",
@@ -415,7 +415,7 @@
           ],
           "properties": {
             "bundle_digest": {
-              "const": "04062dec66e932401fb5913dcaab0208218d38eb30e00f32873081a029b7bd5d"
+              "const": "5011ae3414f1745c581bf553c40ec75574aa29580ea6884e40f3ed112b2bc7f8"
             },
             "bundle_id": {
               "const": "masugate.spend.reference"

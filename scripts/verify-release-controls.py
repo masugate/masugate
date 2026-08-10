@@ -21,10 +21,10 @@ WORKFLOWS = {
 }
 USE = re.compile(r"^\s*-\s*uses:\s+([^@\s]+)@([0-9a-f]{40})\s+#\s+(v[^\s]+)\s*$", re.MULTILINE)
 SHA = re.compile(r"[0-9a-f]{40}\Z")
-PUBLIC_PROJECT_URLS = {
-    "Homepage": "https://github.com/MasuGateGovernance/MasuGate",
-    "Source": "https://github.com/MasuGateGovernance/MasuGate",
-    "Issues": "https://github.com/MasuGateGovernance/MasuGate/issues",
+PROJECT_URLS = {
+    "Homepage": "https://github.com/masugate/masugate",
+    "Source": "https://github.com/masugate/masugate",
+    "Issues": "https://github.com/masugate/masugate/issues",
 }
 
 
@@ -80,7 +80,7 @@ def _expected_matrix(descriptor: dict[str, Any]) -> list[dict[str, Any]]:
     return sorted(expected, key=lambda item: item["purl"])
 
 
-def _validate_public_python_metadata() -> None:
+def _validate_project_python_metadata() -> None:
     for path in sorted(ROOT.rglob("pyproject.toml")):
         try:
             raw = tomllib.loads(path.read_text(encoding="utf-8"))
@@ -94,8 +94,8 @@ def _validate_public_python_metadata() -> None:
             not isinstance(dependency, str) for dependency in dependencies
         ):
             raise ReleaseControlError(f"Python package dependencies are invalid: {path}")
-        if project.get("urls") != PUBLIC_PROJECT_URLS:
-            raise ReleaseControlError(f"Python package public URLs are invalid: {path}")
+        if project.get("urls") != PROJECT_URLS:
+            raise ReleaseControlError(f"Python package project URLs are invalid: {path}")
 
 
 def verify() -> None:
@@ -103,12 +103,12 @@ def verify() -> None:
     policy = _load(POLICY)
     matrix = _load(MATRIX)
     descriptor = _load(DESCRIPTOR)
-    _validate_public_python_metadata()
+    _validate_project_python_metadata()
     if (
         lock.get("schema_version") != "masugate.ci-action-lock/v1"
-        or lock.get("status") != "public-source-activation"
+        or lock.get("status") != "source-release-staged"
     ):
-        raise ReleaseControlError("action lock is not a public-source activation control")
+        raise ReleaseControlError("action lock is not a staged source-release control")
     records = lock.get("actions")
     if not isinstance(records, list) or len(records) != 4:
         raise ReleaseControlError("action lock must contain exactly four reviewed actions")
@@ -132,15 +132,15 @@ def verify() -> None:
         actions[repository] = (tag, commit)
     if (
         policy.get("schema_version") != "masugate.release-control-policy/v1"
-        or policy.get("status") != "public-source-release-active"
+        or policy.get("status") != "source-release-staged"
     ):
-        raise ReleaseControlError("release policy is not an active public-source policy")
+        raise ReleaseControlError("release policy is not a staged source-release policy")
     if (
-        policy.get("release_environment") != "masugate-release"
-        or policy.get("activation", {}).get("source_repository") != "public"
+        policy.get("release_environment") != "not-configured"
+        or policy.get("activation", {}).get("source_repository") != "private"
         or policy.get("activation", {}).get("source_ci") != "enabled"
     ):
-        raise ReleaseControlError("release policy has an invalid public-source activation boundary")
+        raise ReleaseControlError("release policy has an invalid source-release staging boundary")
     if policy.get("publication", {}).get("long_lived_publication_secrets") != "prohibited":
         raise ReleaseControlError("release policy does not prohibit long-lived publication secrets")
     if policy.get("publication", {}).get("package_and_container_artifacts") != "not-published":
@@ -232,7 +232,7 @@ def main() -> None:
         verify()
     except ReleaseControlError as exc:
         raise SystemExit(f"release-control verification failed: {exc}") from exc
-    print("public-source release controls are immutable, bounded, and internally coherent")
+    print("source-release controls are staged, bounded, and internally coherent")
 
 
 if __name__ == "__main__":

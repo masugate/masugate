@@ -1,23 +1,33 @@
 {
   "schema_version": "masugate.release-control-policy/v1",
-  "status": "public-source-release-active",
-  "scope": "public-source-release",
-  "release_environment": "masugate-release",
+  "status": "source-release-staged",
+  "scope": "research-preview-source-staging",
+  "release_environment": "not-configured",
   "activation": {
-    "source_repository": "public",
+    "source_repository": "private",
     "source_ci": "enabled",
-    "requires": ["reviewed repository protection configuration", "fresh verification of source controls and action locks"]
+    "requires": [
+      "make the source repository public",
+      "configure release environment and protected-branch review",
+      "fresh verification of source controls and action locks"
+    ]
   },
   "publication": {
     "trusted_publishers": "not-configured",
     "container_attestation": "not-configured",
     "long_lived_publication_secrets": "prohibited",
-    "source_repository": "public",
+    "source_repository": "private",
     "package_and_container_artifacts": "not-published"
   },
   "two_person_control": {
     "minimum_distinct_approvers": 2,
-    "applies_to": ["release-environment approval", "publishing-workflow change", "publisher or owner-role change", "namespace or domain transfer", "release deletion"],
+    "applies_to": [
+      "release-environment approval",
+      "publishing-workflow change",
+      "publisher or owner-role change",
+      "namespace or domain transfer",
+      "release deletion"
+    ],
     "required_future_enforcement": "repository release environment and protected-branch/tag rules",
     "identity_assignment": "configured outside the source tree"
   },

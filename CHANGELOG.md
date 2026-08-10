@@ -1,11 +1,12 @@
 # Changelog
 
-## 0.1.0 — 2026-08-09
+## 0.1.0 — 2026-08-10
 
 - Correct Python package metadata and require descriptor verification in source CI.
-- Public source release activated with read-only GitHub source checks, a
-  paper-backed citation record, reporting contact, and registry-ready package
-  metadata.
+- Research-preview source staged with read-only GitHub checks, a paper-backed
+  citation record, reporting contact, and registry-ready package metadata.
+  Public activation remains pending repository visibility, release-environment,
+  and protected-branch configuration.
 - Package, container, and hosted release artifacts are not published by this
   source release.
 - First research-preview release of the MasuGate policy-governed action

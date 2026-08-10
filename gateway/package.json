@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "MCP stdio proxy that routes declared effects through MasuGate",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/MasuGateGovernance/MasuGate",
-  "bugs": "https://github.com/MasuGateGovernance/MasuGate/issues",
+  "homepage": "https://github.com/masugate/masugate",
+  "bugs": "https://github.com/masugate/masugate/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MasuGateGovernance/MasuGate.git",
+    "url": "git+https://github.com/masugate/masugate.git",
     "directory": "gateway"
   },
   "type": "module",
