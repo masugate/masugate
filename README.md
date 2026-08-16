@@ -6,7 +6,8 @@ protected execution with an inspectable decision-and-effect record.
 
 **Explore:** [Visit the project website](https://masugate.github.io/) ·
 [Run in five minutes](#five-minute-local-demonstration) ·
-[Read the paper and provenance notes](docs/paper-and-provenance.md) ·
+[Read the arXiv paper](https://arxiv.org/abs/2608.02764) ·
+[Trace the paper-to-code provenance](docs/paper-and-provenance.md) ·
 [Inspect the evidence](docs/claims-and-limitations.md#reading-evidence-responsibly) ·
 [Report an issue](https://github.com/masugate/masugate/issues) ·
 [Read the security policy](SECURITY.md)
