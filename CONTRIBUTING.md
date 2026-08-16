@@ -1,6 +1,7 @@
 # Contributing
 
-Contributions are welcome through a focused issue and pull request. Before
+Contributions are welcome through a focused
+[issue](https://github.com/masugate/masugate/issues) and pull request. Before
 opening a substantial pull request, discuss its scope in an issue or with a
 maintainer. Never submit credentials, private data, generated archives, or
 third-party material whose redistribution terms are unclear.

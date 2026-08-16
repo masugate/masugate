@@ -3,6 +3,10 @@
 This map is for the `0.1.0` research-preview release. It uses stable product and
 code names; it does not describe private migration history.
 
+For the conceptual overview, interactive OpenClaw walkthrough, and project
+updates, visit the [MasuGate website](https://masugate.github.io/). Return to the
+[repository overview](../README.md) for the source checkout and local demo.
+
 ## Reader and researcher path
 
 - [Concepts](concepts.md) explains declared policy state, protected execution,

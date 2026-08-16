@@ -4,9 +4,17 @@
 outdated policy state; MasuGate turns a declared action into a governed,
 protected execution with an inspectable decision-and-effect record.
 
-**Explore:** [Run in five minutes](#five-minute-local-demonstration) ·
+**Explore:** [Visit the project website](https://masugate.github.io/) ·
+[Run in five minutes](#five-minute-local-demonstration) ·
 [Read the paper and provenance notes](docs/paper-and-provenance.md) ·
-[Inspect the evidence](docs/claims-and-limitations.md#reading-evidence-responsibly)
+[Inspect the evidence](docs/claims-and-limitations.md#reading-evidence-responsibly) ·
+[Report an issue](https://github.com/masugate/masugate/issues) ·
+[Read the security policy](SECURITY.md)
+
+Get the current public source from the
+[GitHub repository](https://github.com/masugate/masugate), or
+[download the `main` branch as a ZIP archive](https://github.com/masugate/masugate/archive/refs/heads/main.zip).
+The branch archive is a source snapshot, not a tagged package release.
 
 ## Three concrete contributions
 

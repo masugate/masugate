@@ -11,7 +11,7 @@ version: "0.1.0"
 date-released: "2026-08-10"
 license: "Apache-2.0"
 repository-code: "https://github.com/masugate/masugate"
-url: "https://github.com/masugate/masugate"
+url: "https://masugate.github.io/"
 preferred-citation:
   type: article
   title: "Stateful Governance for Concurrent Agentic Systems"
