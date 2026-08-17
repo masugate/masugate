@@ -38,6 +38,7 @@ from masugate_openclaw_reference.audit_validation import (
     validate_denied_spend_audit,
     validate_spend_authorization_anchor,
 )
+from masugate_openclaw_reference.procurement_workload import REFERENCE_SPEND_DECISION_VALIDATOR
 
 _EVIDENCE_SCHEMA = "masugate.release_verification-reference-release-evidence/v1"
 _MASUGATED_URL = "http://127.0.0.1:8000"
@@ -1045,7 +1046,13 @@ def _scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
     return tuple(accesses)
 
 
-def _validate_concurrent_history(value: object, label: str, *, kind: str) -> History:
+def _validate_concurrent_history(
+    value: object,
+    label: str,
+    *,
+    kind: str,
+    initial_policy_state: object,
+) -> History:
     raw_operations = _list(value, label)
     expected_length = 3 if kind == "governed" else 2
     if len(raw_operations) != expected_length:
@@ -1198,7 +1205,12 @@ def _validate_concurrent_history(value: object, label: str, *, kind: str) -> His
         raise ReleaseVerificationReleaseError(
             f"{label} settlement begins before both admissions finish"
         )
-    return History(tuple(operations))
+    initial_versions = _scope_accesses(initial_policy_state, f"{label}.initial_policy_state")
+    if not initial_versions:
+        raise ReleaseVerificationReleaseError(
+            f"{label} must retain an initial policy-state baseline"
+        )
+    return History(tuple(operations), initial_versions=initial_versions)
 
 
 def _audit_scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
@@ -1520,6 +1532,7 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         "budget_valid",
         "terminal_statuses",
         "pss",
+        "initial_policy_state",
         "history",
         "final_policy_state",
         "governance_records",
@@ -1531,6 +1544,7 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         "stale_authorization",
         "effect_ledger",
         "pss",
+        "initial_policy_state",
         "history",
     }:
         raise ReleaseVerificationReleaseError(
@@ -1552,9 +1566,15 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
     ]
     raw_governed_history = _list(governed.get("history"), "concurrent governed history")
     governed_history = _validate_concurrent_history(
-        raw_governed_history, "concurrent governed history", kind="governed"
+        raw_governed_history,
+        "concurrent governed history",
+        kind="governed",
+        initial_policy_state=governed.get("initial_policy_state"),
     )
-    governed_verdict = check_pss(governed_history)
+    governed_verdict = check_pss(
+        governed_history,
+        decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR,
+    )
     if (
         governed.get("committed_cents") != 6_000
         or governed.get("budget_valid") is not True
@@ -1614,9 +1634,15 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
     }:
         raise ReleaseVerificationReleaseError("concurrent weak assumptions are incompatible")
     weak_history = _validate_concurrent_history(
-        weak.get("history"), "concurrent weak history", kind="weak"
+        weak.get("history"),
+        "concurrent weak history",
+        kind="weak",
+        initial_policy_state=weak.get("initial_policy_state"),
     )
-    weak_verdict = check_pss(weak_history)
+    weak_verdict = check_pss(
+        weak_history,
+        decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR,
+    )
     if (
         weak.get("committed_cents") != 12_000
         or weak.get("overshoot_cents") != 2_000

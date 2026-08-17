@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pytest import MonkeyPatch
+
+import masugate.pss.checker as checker
 from masugate.pss import (
     DependencyKind,
     Operation,
@@ -327,3 +330,184 @@ def test_provider_decision_validator_checks_all_terminal_decisions() -> None:
     assert verdict.decision_semantics_checked
     assert "decision replay rejected denied" in verdict.reason
     assert not check_pss_exhaustively(History((denied,)), decision_validator=validator).pss
+
+
+# --------------------------------------------------------------------------- #
+# Deterministic bounded oracle gate.
+# --------------------------------------------------------------------------- #
+
+
+def _generated_bounded_history(seed: int) -> History:
+    """Build one of several bounded histories from a deterministic seed.
+
+    The families deliberately cover serial chains, stale reads, write skew,
+    shared unchanged policy reads, version gaps, mutual dependencies, and
+    varied raw histories.  Keeping every case to at most four operations makes
+    comparison with the independent exhaustive oracle practical in CI.
+    """
+
+    state = seed + 1
+
+    def draw(bound: int) -> int:
+        nonlocal state
+        state = (state * 1_103_515_245 + 12_345) & 0x7FFF_FFFF
+        return state % bound
+
+    family = seed % 7
+    count = 1 + draw(4)
+    if family == 0:
+        operations = tuple(
+            _op(
+                f"serial-{seed}-{index}",
+                index * 20,
+                index * 20 + 10,
+                committed=True,
+                reads=[("serial", index)],
+                writes=[("serial", index + 1)],
+            )
+            for index in range(count)
+        )
+    elif family == 1:
+        operations = tuple(
+            _op(
+                f"stale-{seed}-{index}",
+                index,
+                10 + index,
+                committed=True,
+                reads=[("stale", 0)],
+                writes=[("stale", index + 1)],
+            )
+            for index in range(max(2, count))
+        )
+    elif family == 2:
+        operations = (
+            _op("skew-x-" + str(seed), 0, 10, committed=True, reads=[("x", 0)], writes=[("y", 1)]),
+            _op("skew-y-" + str(seed), 0, 10, committed=True, reads=[("y", 0)], writes=[("x", 1)]),
+        )
+    elif family == 3:
+        operations = tuple(
+            _op(
+                f"shared-{seed}-{index}",
+                0,
+                10,
+                committed=True,
+                reads=[("risk", 0)],
+                writes=[(f"effect-{index}", 1)],
+            )
+            for index in range(max(2, count))
+        )
+    elif family == 4:
+        operations = (
+            _op(
+                f"gap-{seed}",
+                0,
+                10,
+                committed=True,
+                reads=[("gap", 0)],
+                writes=[("gap", 2)],
+            ),
+        )
+    elif family == 5:
+        operations = (
+            _op(
+                f"mutual-x-{seed}",
+                0,
+                10,
+                committed=True,
+                reads=[("y", 1)],
+                writes=[("x", 1)],
+            ),
+            _op(
+                f"mutual-y-{seed}",
+                0,
+                10,
+                committed=True,
+                reads=[("x", 1)],
+                writes=[("y", 1)],
+            ),
+        )
+    else:
+        operations = tuple(
+            _op(
+                f"raw-{seed}-{index}",
+                draw(5),
+                6 + draw(5),
+                committed=bool(draw(2)),
+                reads=[(f"raw-{draw(3)}", draw(4))] if draw(2) else [],
+                writes=[(f"raw-{draw(3)}", 1 + draw(3))] if draw(2) else [],
+            )
+            for index in range(count)
+        )
+    return History(operations)
+
+
+def test_optimized_checker_matches_exhaustive_oracle_on_30k_generated_histories() -> None:
+    accepted = 0
+    rejected = 0
+    for seed in range(30_000):
+        history = _generated_bounded_history(seed)
+        optimized = check_pss(history)
+        exhaustive = check_pss_exhaustively(history)
+        assert optimized.pss == exhaustive.pss, f"oracle disagreement for generated seed {seed}"
+        if optimized.pss:
+            accepted += 1
+        else:
+            rejected += 1
+    assert accepted > 0
+    assert rejected > 0
+
+
+def test_write_skew_regression_kills_legacy_graph_only_mutant(monkeypatch: MonkeyPatch) -> None:
+    """The pre-v0.1.1 no-RW/no-replay checker would accept write skew."""
+
+    history = History(
+        (
+            _op("A", 0, 10, committed=True, reads=[("x", 0)], writes=[("y", 1)]),
+            _op("B", 0, 10, committed=True, reads=[("y", 0)], writes=[("x", 1)]),
+        )
+    )
+    assert not check_pss(history).pss
+
+    original_add = checker._Graph.add
+
+    def add_without_rw(graph: checker._Graph, dependency: checker.PSSDependency) -> None:
+        if dependency.kind is not DependencyKind.RW:
+            original_add(graph, dependency)
+
+    monkeypatch.setattr(checker._Graph, "add", add_without_rw)
+    monkeypatch.setattr(checker, "_replay_witness", lambda *_args, **_kwargs: None)
+
+    assert checker.check_pss(history).pss
+
+
+def test_shared_read_regression_kills_duplicate_read_rejection_mutant(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Reinstating the old global duplicate-read heuristic rejects a legal history."""
+
+    history = History(
+        (
+            _op("A", 0, 10, committed=True, reads=[("risk", 0)], writes=[("x", 1)]),
+            _op("B", 0, 10, committed=True, reads=[("risk", 0)], writes=[("y", 1)]),
+        )
+    )
+    assert check_pss(history).pss
+
+    original_validate = checker._validate_history
+
+    def reject_shared_reads(candidate: History) -> object:
+        validated = original_validate(candidate)
+        if isinstance(validated, str):
+            return validated
+        seen: set[tuple[str, int]] = set()
+        for operation in candidate.operations:
+            for read in operation.reads:
+                key = (read.scope, read.version)
+                if key in seen:
+                    return "legacy duplicate-read rejection"
+                seen.add(key)
+        return validated
+
+    monkeypatch.setattr(checker, "_validate_history", reject_shared_reads)
+
+    assert not checker.check_pss(history).pss

@@ -46,6 +46,7 @@ from masugate_openclaw_reference.audit_validation import (
 from masugate_openclaw_reference.audit_validation import (
     validate_spend_authorization_anchor as _shared_spend_authorization_anchor,
 )
+from masugate_openclaw_reference.procurement_workload import REFERENCE_SPEND_DECISION_VALIDATOR
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_BUILDER = ROOT / "scripts" / "build-reference-release.py"
@@ -1115,7 +1116,13 @@ def _scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
     return tuple(accesses)
 
 
-def _validate_history(history: object, label: str, *, kind: str) -> History:
+def _validate_history(
+    history: object,
+    label: str,
+    *,
+    kind: str,
+    initial_policy_state: object,
+) -> History:
     raw_operations = _list(history, label)
     expected_length = 3 if kind == "governed" else 2
     if len(raw_operations) != expected_length:
@@ -1225,7 +1232,10 @@ def _validate_history(history: object, label: str, *, kind: str) -> History:
             raise DemoRunnerError(
                 f"{label} settlement begins before both governed admissions finish"
             )
-    return History(tuple(operations))
+    initial_versions = _scope_accesses(initial_policy_state, f"{label}.initial_policy_state")
+    if not initial_versions:
+        raise DemoRunnerError(f"{label} must retain an initial policy-state baseline")
+    return History(tuple(operations), initial_versions=initial_versions)
 
 
 def _validate_scenario_request(
@@ -1901,8 +1911,12 @@ def _validate_demo_evidence(
             raw_history,
             f"{scenario}.governed.history",
             kind="governed",
+            initial_policy_state=governed.get("initial_policy_state"),
         )
-        governed_verdict = check_pss(history)
+        governed_verdict = check_pss(
+            history,
+            decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR,
+        )
         if not governed_verdict.pss:
             raise DemoRunnerError(f"{scenario} governed history does not replay as PSS")
         if pss != {
@@ -2045,9 +2059,15 @@ def _validate_demo_evidence(
         ):
             raise DemoRunnerError("weak baseline unexpectedly passed PSS")
         weak_history = _validate_history(
-            weak.get("history"), "procurement.weak_baseline.history", kind="weak"
+            weak.get("history"),
+            "procurement.weak_baseline.history",
+            kind="weak",
+            initial_policy_state=weak.get("initial_policy_state"),
         )
-        weak_verdict = check_pss(weak_history)
+        weak_verdict = check_pss(
+            weak_history,
+            decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR,
+        )
         if weak_verdict.pss:
             raise DemoRunnerError("weak baseline history replays as PSS")
         if weak_pss != {

@@ -64,18 +64,22 @@ should populate:
 - `causal_operation_id` and `transition_kind` where a logical action has more
   than one visible policy-state transition.
 
-The reference procurement workload now retains policy-read values and runs its
-fixed spend predicate through a provider validator. Its independent release
-evidence verifier additionally binds the captured transitions to the retained
-audits. Other providers receive only a structural PSS verdict until they pass a
-validator. Existing v0.1.0 experimental PSS labels should be treated as
-workload-specific invariant observations until rerun with corrected histories,
-the corrected checker, and provider decision replay.
+The reference procurement workload now retains policy-read values, an explicit
+initial policy-state baseline, and runs its fixed spend predicate through a
+provider validator. Its independent demo and release-evidence verifiers rebuild
+that complete history, invoke the same validator, and compare the resulting
+semantic PSS verdict rather than trusting a producer-supplied flag. Other
+providers receive only a structural PSS verdict until they pass a validator.
+Existing v0.1.0 experimental PSS labels should be treated as workload-specific
+invariant observations until rerun with corrected histories, the corrected
+checker, and provider decision replay.
 
 ## Required gates before publication
 
 1. The optimized checker and bounded exhaustive oracle agree on the corrected
-   counterexamples and generated bounded histories.
+   counterexamples and 30,000 deterministic generated bounded histories; the
+   regression suite also kills the historical graph-only and duplicate-read
+   checker mutants.
 2. Reference procurement evidence records visible reservation and settlement
    transitions with causal linkage.
 3. Provider policy replay validates both allows and denials for claim-bearing

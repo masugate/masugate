@@ -98,9 +98,13 @@ history. Under these assumptions:
    including denials.
 
 The bounded oracle in `oracle.py` independently enumerates serial orders and
-replays them. Tests compare it with the optimized graph checker for the
-counterexamples and generated bounded histories. The oracle is intentionally
-not a production path.
+replays them. The test gate compares it with the optimized graph checker on
+30,000 deterministic generated histories of at most four operations, covering
+serial chains, stale reads, write skew, shared unchanged reads, version gaps,
+mutual dependencies, and varied raw histories. Mutation regressions also show
+that the pre-v0.1.1 graph-only checker accepts write skew and that the former
+global duplicate-read heuristic rejects a legal shared read. The oracle is
+intentionally not a production path.
 
 ## Limits and assumptions
 

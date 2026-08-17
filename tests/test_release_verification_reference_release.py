@@ -306,6 +306,7 @@ def _governance_record(
 
 def _concurrency_addon() -> dict[str, object]:
     scope = "spend:team:research"
+    initial_policy_state = [{"scope": scope, "version": 0, "value": 10_000}]
     governed_history = [
         {
             "operation_id": "committed:reservation",
@@ -367,13 +368,21 @@ def _concurrency_addon() -> dict[str, object]:
     ]
     governed_verdict = check_pss(
         release_verification_release._validate_concurrent_history(
-            governed_history, "fixture governed history", kind="governed"
-        )
+            governed_history,
+            "fixture governed history",
+            kind="governed",
+            initial_policy_state=initial_policy_state,
+        ),
+        decision_validator=release_verification_release.REFERENCE_SPEND_DECISION_VALIDATOR,
     )
     weak_verdict = check_pss(
         release_verification_release._validate_concurrent_history(
-            weak_history, "fixture weak history", kind="weak"
-        )
+            weak_history,
+            "fixture weak history",
+            kind="weak",
+            initial_policy_state=initial_policy_state,
+        ),
+        decision_validator=release_verification_release.REFERENCE_SPEND_DECISION_VALIDATOR,
     )
     governed = {
         "kind": "governed-product-coordination",
@@ -394,6 +403,7 @@ def _concurrency_addon() -> dict[str, object]:
             "reason": governed_verdict.reason,
             "decision_semantics_checked": True,
         },
+        "initial_policy_state": initial_policy_state,
         "history": governed_history,
         "final_policy_state": {
             "scope": scope,
@@ -450,6 +460,7 @@ def _concurrency_addon() -> dict[str, object]:
             "reason": weak_verdict.reason,
             "decision_semantics_checked": True,
         },
+        "initial_policy_state": initial_policy_state,
         "history": weak_history,
     }
     return {
@@ -1082,6 +1093,18 @@ def test_release_evidence_replays_concurrency_and_e6_transitions() -> None:
     with pytest.raises(
         release_verification_release.ReleaseVerificationReleaseError,
         match="weak evidence does not replay",
+    ):
+        release_verification_release.validate_release_evidence(evidence)
+
+    evidence = _valid_evidence()
+    concurrent = cast(dict[str, object], evidence["adversarial"])["concurrent_addon"]
+    governed = cast(dict[str, object], cast(dict[str, object], concurrent)["governed"])
+    history = cast(list[dict[str, object]], governed["history"])
+    reads = cast(list[dict[str, object]], history[1]["policy_reads"])
+    reads[0]["value"] = 10_000
+    with pytest.raises(
+        release_verification_release.ReleaseVerificationReleaseError,
+        match="concurrent governed evidence does not replay as PSS",
     ):
         release_verification_release.validate_release_evidence(evidence)
 

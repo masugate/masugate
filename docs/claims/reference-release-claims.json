@@ -102,7 +102,7 @@
       "evidence": [
         {
           "gate": "pytest tests/test_pss.py",
-          "result": "The corrected checker and bounded exhaustive oracle accept legal serializations and reject write skew, stale decisions, malformed version chains, and mutant checkers.",
+          "result": "The corrected checker and bounded exhaustive oracle agree on 30,000 deterministic histories while accepting legal serializations and rejecting write skew, stale decisions, malformed version chains, and historical checker mutants.",
           "paths": ["tests/test_pss.py", "src/masugate/pss/oracle.py"]
         },
         {

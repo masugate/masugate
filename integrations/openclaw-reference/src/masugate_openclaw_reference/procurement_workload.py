@@ -321,6 +321,12 @@ def _history_payload(history: History) -> list[dict[str, object]]:
     return payloads
 
 
+def _initial_policy_state_payload(history: History) -> list[dict[str, object]]:
+    """Serialize the retained baseline required for semantic replay."""
+
+    return [_scope_access_payload(access) for access in history.initial_versions]
+
+
 def _pss_payload(verdict: PSSVerdict) -> dict[str, object]:
     """Preserve whether provider decision replay participated in the verdict."""
 
@@ -331,7 +337,7 @@ def _pss_payload(verdict: PSSVerdict) -> dict[str, object]:
     }
 
 
-def _reference_spend_decision_validator(
+def reference_spend_decision_validator(
     operation: Operation,
     state: Mapping[str, ScopeAccess],
 ) -> str | None:
@@ -371,7 +377,7 @@ def _reference_spend_decision_validator(
     return None
 
 
-_REFERENCE_SPEND_DECISION_VALIDATOR: DecisionValidator = _reference_spend_decision_validator
+REFERENCE_SPEND_DECISION_VALIDATOR: DecisionValidator = reference_spend_decision_validator
 
 
 def _budget_snapshot(team_id: str) -> dict[str, object]:
@@ -463,7 +469,7 @@ def weak_request_time_baseline() -> dict[str, object]:
         operations=operations,
         initial_versions=(ScopeAccess(scope=scope, version=0, value=_BUDGET_CENTS),),
     )
-    verdict = check_pss(history, decision_validator=_REFERENCE_SPEND_DECISION_VALIDATOR)
+    verdict = check_pss(history, decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR)
     if verdict.pss:
         raise AssertionError(
             "the intentionally stale request-time baseline unexpectedly passed PSS"
@@ -484,6 +490,7 @@ def weak_request_time_baseline() -> dict[str, object]:
         "stale_authorization": True,
         "effect_ledger": effects,
         "pss": _pss_payload(verdict),
+        "initial_policy_state": _initial_policy_state_payload(history),
         "history": _history_payload(history),
     }
 
@@ -633,7 +640,7 @@ async def governed_procurement_workload() -> dict[str, object]:
         != terminal_version
     ):
         raise DemoError("governed procurement history omits the terminal budget write")
-    verdict = check_pss(history, decision_validator=_REFERENCE_SPEND_DECISION_VALIDATOR)
+    verdict = check_pss(history, decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR)
     if not verdict.pss:
         raise DemoError(f"governed procurement history failed PSS: {verdict.reason}")
     committed_cents = sum(
@@ -657,6 +664,7 @@ async def governed_procurement_workload() -> dict[str, object]:
         "budget_valid": committed_cents <= _BUDGET_CENTS,
         "terminal_statuses": [cast(str, result["status"]) for result in terminal],
         "pss": _pss_payload(verdict),
+        "initial_policy_state": _initial_policy_state_payload(history),
         "history": _history_payload(history),
         "final_policy_state": final_policy_state,
         "governance_records": audits,

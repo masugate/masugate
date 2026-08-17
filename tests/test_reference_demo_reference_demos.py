@@ -516,6 +516,9 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                     "reason": "fixture",
                     "decision_semantics_checked": True,
                 },
+                "initial_policy_state": [
+                    {"scope": "spend:team:research", "version": 0, "value": 10_000}
+                ],
                 "terminal_statuses": ["committed", "denied"],
                 "history": [
                     {
@@ -582,8 +585,12 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
         governed["history"],
         "fixture.governed.history",
         kind="governed",
+        initial_policy_state=governed["initial_policy_state"],
     )
-    verdict = check_pss(history)
+    verdict = check_pss(
+        history,
+        decision_validator=runner.REFERENCE_SPEND_DECISION_VALIDATOR,
+    )
     governed["pss"] = {
         "valid": verdict.pss,
         "reason": verdict.reason,
@@ -599,6 +606,9 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
     assert report["committed_cents"] == 12_000
     assert report["overshoot_cents"] == 2_000
     assert report["stale_authorization"] is True
+    assert report["initial_policy_state"] == [
+        {"scope": "spend:team:research", "version": 0, "value": 10_000}
+    ]
     assert report["pss"] == {
         "valid": False,
         "reason": "serialization cycle (RW -> RW) among weak-alpha -> weak-beta -> weak-alpha",
@@ -963,6 +973,26 @@ def test_governed_evidence_binds_terminal_state_and_release() -> None:
         valid,
         expected_release_descriptor=release,
     )
+
+    semantic_value_drift = deepcopy(valid)
+    payload = semantic_value_drift["evidence"]
+    assert isinstance(payload, dict)
+    governed = payload["governed"]
+    assert isinstance(governed, dict)
+    history = governed["history"]
+    assert isinstance(history, list)
+    denial = history[1]
+    assert isinstance(denial, dict)
+    reads = denial["policy_reads"]
+    assert isinstance(reads, list)
+    read = reads[0]
+    assert isinstance(read, dict)
+    read["value"] = 10_000
+    with pytest.raises(runner.DemoRunnerError, match="governed history does not replay as PSS"):
+        runner._validate_demo_evidence(
+            semantic_value_drift,
+            expected_release_descriptor=release,
+        )
 
     status_only_denial = deepcopy(valid)
     payload = status_only_denial["evidence"]
