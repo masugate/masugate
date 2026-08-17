@@ -28,8 +28,13 @@ flowchart LR
 Policy-state serializability (PSS) is the project’s history-checking model for
 the declared policy-relevant state. A policy’s complete declared state must be
 represented by conforming providers within the coordination domain. The checker
-implementation is in [`src/masugate/pss/checker.py`](../src/masugate/pss/checker.py)
-and its data model is in [`src/masugate/pss/model.py`](../src/masugate/pss/model.py).
+constructs WR, WW, RW, and real-time dependencies, then replays its serial
+witness from recorded versions; a provider decision validator is required to
+replay an arbitrary policy predicate. The implementation is in
+[`src/masugate/pss/checker.py`](../src/masugate/pss/checker.py), its data model
+is in [`src/masugate/pss/model.py`](../src/masugate/pss/model.py), and the
+v0.1.1 semantic correction is recorded in
+[PSS correction record](pss-v0.1.1-correction.md).
 
 PSS is not a general availability, fairness, liveness, compliance, or host
 integrity guarantee. It says nothing about policy-relevant state that was never
@@ -75,4 +80,4 @@ system is tamper-proof. The protocol schema is
 and the audit model is in
 [`src/masugate/protected_execution/audit.py`](../src/masugate/protected_execution/audit.py).
 
-Version: `0.1.0` (research preview). Next: [Architecture](architecture.md).
+Version: `0.1.1` (research preview). Next: [Architecture](architecture.md).

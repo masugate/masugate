@@ -51,4 +51,4 @@ result re-enters enforcement; it can still deny if the protected basis does not
 support commitment. A missing credential or live service must yield the
 documented `SKIPPED` outcome for optional checks, not a fabricated success.
 
-Version: `0.1.0` (research preview). Next: [Extending MasuGate](extending-masugate.md).
+Version: `0.1.1` (research preview). Next: [Extending MasuGate](extending-masugate.md).

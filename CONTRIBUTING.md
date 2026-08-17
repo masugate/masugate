@@ -15,4 +15,4 @@ before running tests. The in-tree connector SDK must be installed before the
 root editable package; this is a development arrangement, not an instruction
 to add a local-path dependency to a built distribution.
 
-Version: `0.1.0` (research preview). Next: [Security policy](SECURITY.md).
+Version: `0.1.1` (research preview). Next: [Security policy](SECURITY.md).

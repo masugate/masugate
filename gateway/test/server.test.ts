@@ -184,7 +184,7 @@ describe("official MCP client/server smoke", () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     const server = await connectGatewayServer(router, serverTransport);
     const client = new Client(
-      { name: "gateway-smoke-client", version: "0.1.0" },
+      { name: "gateway-smoke-client", version: "0.1.1" },
       { capabilities: {} },
     );
 

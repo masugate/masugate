@@ -27,7 +27,7 @@ def test_exact_overrides_exclude_ambiguous_host_and_own_packages() -> None:
             "alpha": frozenset({"1.0.0"}),
             "ambiguous": frozenset({"1.0.0", "2.0.0"}),
             "openclaw": frozenset({"2026.7.1"}),
-            "@masugate/client": frozenset({"0.1.0"}),
+            "@masugate/client": frozenset({"0.1.1"}),
         }
     )
     assert overrides == {"alpha": "1.0.0"}
@@ -77,11 +77,11 @@ def test_consumer_lock_rejects_stale_relative_own_package_resolution(tmp_path: P
     for package, filename in consumer.OWN_PACKAGES.items():
         resolved = f"file:{(npm / filename).resolve()}"
         packages[f"node_modules/{package}"] = {
-            "version": "0.1.0",
+            "version": "0.1.1",
             "resolved": resolved,
         }
     packages["node_modules/@masugate/client"]["resolved"] = (
-        "file:../old-build/masugate-client-0.1.0.tgz"
+        "file:../old-build/masugate-client-0.1.1.tgz"
     )
     lock = {"packages": packages}
     with pytest.raises(consumer.CleanConsumerError, match="does not resolve the built tarball"):
@@ -109,11 +109,11 @@ def test_consumer_lock_allows_bundled_own_dependency_without_tarball_resolution(
     }
     for package, filename in consumer.OWN_PACKAGES.items():
         packages[f"node_modules/{package}"] = {
-            "version": "0.1.0",
+            "version": "0.1.1",
             "resolved": f"file:{(npm / filename).resolve()}",
         }
     packages["node_modules/@masugate/openclaw/node_modules/@masugate/adapter-core"] = {
-        "version": "0.1.0",
+        "version": "0.1.1",
         "inBundle": True,
     }
     consumer._validate_consumer_lock(

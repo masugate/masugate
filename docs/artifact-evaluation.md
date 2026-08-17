@@ -1,14 +1,14 @@
 # Artifact evaluation
 
 **Audience:** artifact reviewers. Start with [Concepts](concepts.md), then
-[Reproduction](reproduction.md). **Supported boundary:** the `0.1.0`
+[Reproduction](reproduction.md). **Supported boundary:** the `0.1.1`
 research-preview release and its checked-in descriptor, not a production deployment.
 
 ## Review checklist
 
 1. Confirm the reference descriptor at
    [`release/reference-release.json`](../release/reference-release.json) names
-   `masugate-openclaw-reference/0.1.0`, Linux/amd64, and CPython 3.12.
+   `masugate-openclaw-reference/0.1.1`, Linux/amd64, and CPython 3.12.
 2. After the exact setup below, run the local descriptor integrity check:
 
    ```sh
@@ -125,4 +125,4 @@ The six digest-pinned base images are shared Docker cache inputs and are not
 removed automatically. Remove them only under the local Docker administrator’s
 normal image-retention policy.
 
-Version: `0.1.0` (research preview). Next: [Reproduction](reproduction.md).
+Version: `0.1.1` (research preview). Next: [Reproduction](reproduction.md).

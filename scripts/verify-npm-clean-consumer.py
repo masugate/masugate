@@ -12,10 +12,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 OWN_PACKAGES = {
-    "@masugate/client": "masugate-client-0.1.0.tgz",
-    "@masugate/adapter-core": "masugate-adapter-core-0.1.0.tgz",
-    "@masugate/mcp-gateway": "masugate-mcp-gateway-0.1.0.tgz",
-    "@masugate/openclaw": "masugate-openclaw-0.1.0.tgz",
+    "@masugate/client": "masugate-client-0.1.1.tgz",
+    "@masugate/adapter-core": "masugate-adapter-core-0.1.1.tgz",
+    "@masugate/mcp-gateway": "masugate-mcp-gateway-0.1.1.tgz",
+    "@masugate/openclaw": "masugate-openclaw-0.1.1.tgz",
 }
 IMPORT_SMOKE = """
 import { MasuGateClient } from '@masugate/client';
@@ -151,7 +151,7 @@ def _validate_consumer_lock(
                 raise CleanConsumerError(
                     f"consumer has an unexpected nested own package: {location}"
                 )
-            if version != "0.1.0":
+            if version != "0.1.1":
                 raise CleanConsumerError(f"own package version drifted: {name}@{version}")
             expected = f"file:{((release_dir / 'npm') / OWN_PACKAGES[name]).resolve()}"
             if record.get("resolved") != expected:

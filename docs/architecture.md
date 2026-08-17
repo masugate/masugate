@@ -46,4 +46,4 @@ descriptor binds package and profile identities in
 - A receipt records retained evidence; it is not an independently witnessed
   attestation.
 
-Version: `0.1.0` (research preview). Next: [Protocol](protocol.md).
+Version: `0.1.1` (research preview). Next: [Protocol](protocol.md).

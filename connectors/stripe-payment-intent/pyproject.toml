@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "masugate-connector-stripe-payment-intent"
-version = "0.1.0"
+version = "0.1.1"
 description = "Exact Stripe PaymentIntent test-mode profile for MasuGate"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 
-dependencies = ["masugate-connector-sdk==0.1.0"]
+dependencies = ["masugate-connector-sdk==0.1.1"]
 
 [project.urls]
 Homepage = "https://github.com/masugate/masugate"

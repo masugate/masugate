@@ -31,9 +31,9 @@
         "implementation_digest": "0000000000000000000000000000000000000000000000000000000000000000",
         "maturity": "reference-effect",
         "package_id": "masugate-connector-filesystem",
-        "package_version": "0.1.0",
+        "package_version": "0.1.1",
         "sdk_contract_version": "masugate.connector-sdk.v1",
-        "version": "0.1.0"
+        "version": "0.1.1"
       }
     ],
     "contract_version": "masugate.connector-registry.v2"
@@ -56,7 +56,7 @@
     "connector_entry_point": "filesystem",
     "connector_id": "filesystem-v1",
     "connector_package_id": "masugate-connector-filesystem",
-    "connector_package_version": "0.1.0",
+    "connector_package_version": "0.1.1",
     "connector_sdk_contract_version": "masugate.connector-sdk.v1",
     "credential_refs": []
   },

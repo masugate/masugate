@@ -1,222 +1,412 @@
-"""Policy-State Serializability (PSS) checker — the reference verifier.
+"""Policy-State Serializability (PSS) checker for declared versioned state.
 
-Given a recorded ``History`` of terminal governed operations, decide whether it
-satisfies PSS (paper Def. 1): there exists a serial order that (1) respects the
-real-time order of the history and (2) makes every decision explainable against
-the policy state immediately before the operation's serial position, with each
-allowed effect applied at that position.
+For a complete recorded access history, PSS requires a real-time-respecting
+serial witness in which every read observes the state immediately before its
+transition and every committed write advances its scope exactly once.  The
+checker builds the multiversion serialization graph:
 
-This is decided by the standard serialization-graph method (Papadimitriou 1979
-for conflict-serializability; Herlihy-Wing 1990 for the real-time constraint):
-build a directed graph over terminal operations whose edges are the
-required orderings, and report PSS iff the graph has no cycle. See pss/README.md
-for the correctness argument that acyclicity + real-time ⟺ PSS for this model.
+* WR: a writer precedes a reader of the version it produced;
+* WW: writes of one scope follow their declared version order;
+* RW: a reader of an old version precedes every later writer of that scope;
+* RT: a completed operation precedes an operation that begins later.
 
-The check has two parts, both required (a graph cycle alone is necessary but
-NOT sufficient — see the read-legality note):
-
-1. **Serialization graph acyclicity.** Edges (all mean "must precede"):
-   - *version order (WR/WW):* if i writes scope s to version v and j reads s at
-     v, then i → j (j observed i's write). If i and j both write s, order by
-     version. These are the policy-induced conflicts of §3.4
-     (W_effect(i) ∩ R_policy(j)).
-   - *real-time (0.9b):* if i's terminal event precedes j's begin event
-     (commit_ns(i) < begin_ns(j)), then i → j. Makes the check strict-
-     serializability-like, not merely conflict-serializable.
-   A cycle means no serial order satisfies the constraints ⇒ PSS violated.
-
-2. **Read legality** (Def. 1 clause 2). Even an acyclic history can violate PSS:
-   if two committed operations both read the SAME version of a scope, no serial
-   order explains them — the second in any order sees the first's write, so it
-   should have read version+1. Formally: on each scope, the committed writers
-   form a chain v=1,2,3,…; a committed op that read version r of that scope is
-   only legal if exactly r committed writes to that scope precede it in the
-   serial order. Two committed ops sharing a read-version is the signature of
-   stale authorization, and is illegal regardless of acyclicity.
-
-Denied operations contribute no effect writes (they change no policy state) but
-still take part in real-time ordering and read-legality (a deny that read a
-stale version is fine — it produced nothing).
+RW anti-dependencies are essential.  Omitting them accepts write skew; using a
+"no duplicate reads" shortcut rejects legal shared read-only state.  After a
+topological sort, the checker replays every declared read and write against the
+witness.  A provider may additionally supply a decision validator to replay
+its policy predicate from retained policy evidence.
 """
 
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from itertools import pairwise
+from types import MappingProxyType
 
-from masugate.pss.model import History, Operation
+from masugate.pss.model import History, Operation, ScopeAccess
+
+
+class DependencyKind(StrEnum):
+    WR = "WR"
+    WW = "WW"
+    RW = "RW"
+    REAL_TIME = "real-time"
+
+
+@dataclass(frozen=True)
+class PSSDependency:
+    """One required serialization edge and the evidence that induced it."""
+
+    source: str
+    target: str
+    kind: DependencyKind
+    scope: str | None = None
+    version: int | None = None
+
+
+DecisionValidator = Callable[[Operation, Mapping[str, ScopeAccess]], str | None]
 
 
 @dataclass(frozen=True)
 class PSSVerdict:
     pss: bool
-    cycle: tuple[str, ...]  # op_ids forming a violating cycle, empty if none
+    cycle: tuple[str, ...]
     reason: str
+    serial_order: tuple[str, ...] = ()
+    dependencies: tuple[PSSDependency, ...] = ()
+    decision_semantics_checked: bool = False
 
     def __bool__(self) -> bool:
         return self.pss
 
 
+@dataclass(frozen=True)
+class _ValidatedHistory:
+    operations: tuple[Operation, ...]
+    initial_state: Mapping[str, ScopeAccess]
+    writers: Mapping[str, tuple[tuple[int, str], ...]]
+    writer_of: Mapping[tuple[str, int], str]
+
+
 class _Graph:
-    def __init__(self, nodes: list[str]) -> None:
-        self._adj: dict[str, set[str]] = {n: set() for n in nodes}
+    def __init__(self, nodes: tuple[str, ...]) -> None:
+        self._nodes = nodes
+        self._adj: dict[str, dict[str, list[PSSDependency]]] = {node: {} for node in nodes}
 
-    def add_edge(self, src: str, dst: str) -> None:
-        if src != dst:
-            self._adj[src].add(dst)
+    def add(self, dependency: PSSDependency) -> None:
+        if dependency.source == dependency.target:
+            return
+        edges = self._adj[dependency.source].setdefault(dependency.target, [])
+        if dependency not in edges:
+            edges.append(dependency)
 
-    def find_cycle(self) -> list[str]:
-        """Return one cycle (as an op_id list) if the graph has one, else []."""
-        WHITE, GRAY, BLACK = 0, 1, 2
-        color = dict.fromkeys(self._adj, WHITE)
-        parent: dict[str, str | None] = dict.fromkeys(self._adj, None)
+    @property
+    def dependencies(self) -> tuple[PSSDependency, ...]:
+        return tuple(
+            dependency
+            for source in self._nodes
+            for target in sorted(self._adj[source])
+            for dependency in sorted(
+                self._adj[source][target],
+                key=lambda edge: (edge.kind.value, edge.scope or "", edge.version or -1),
+            )
+        )
 
-        def walk(start: str) -> list[str]:
-            # Iterative DFS to avoid recursion limits on large histories.
+    def find_cycle(self) -> tuple[str, ...]:
+        white, gray, black = 0, 1, 2
+        color = dict.fromkeys(self._nodes, white)
+        parent: dict[str, str | None] = dict.fromkeys(self._nodes, None)
+
+        def walk(start: str) -> tuple[str, ...]:
             stack: list[tuple[str, bool]] = [(start, False)]
             while stack:
                 node, leaving = stack.pop()
                 if leaving:
-                    color[node] = BLACK
+                    color[node] = black
                     continue
-                if color[node] != WHITE:
+                if color[node] != white:
                     continue
-                color[node] = GRAY
+                color[node] = gray
                 stack.append((node, True))
-                for nbr in self._adj[node]:
-                    if color[nbr] == WHITE:
-                        parent[nbr] = node
-                        stack.append((nbr, False))
-                    elif color[nbr] == GRAY:
-                        # Back edge node -> nbr: reconstruct nbr ... node nbr.
-                        cyc = [node]
-                        cur = node
-                        while cur != nbr and parent[cur] is not None:
-                            cur = parent[cur]  # type: ignore[assignment]
-                            cyc.append(cur)
-                        cyc.reverse()
-                        return cyc
-            return []
+                for neighbor in reversed(sorted(self._adj[node])):
+                    if color[neighbor] == white:
+                        parent[neighbor] = node
+                        stack.append((neighbor, False))
+                    elif color[neighbor] == gray:
+                        path = [node]
+                        cursor = node
+                        while cursor != neighbor:
+                            predecessor = parent[cursor]
+                            if predecessor is None:
+                                return ()
+                            cursor = predecessor
+                            path.append(cursor)
+                        path.reverse()
+                        return tuple(path)
+            return ()
 
-        for n in self._adj:
-            if color[n] == WHITE:
-                cyc = walk(n)
-                if cyc:
-                    return cyc
-        return []
+        for node in self._nodes:
+            if color[node] == white:
+                cycle = walk(node)
+                if cycle:
+                    return cycle
+        return ()
+
+    def topological_order(self) -> tuple[str, ...]:
+        indegree = dict.fromkeys(self._nodes, 0)
+        for outgoing in self._adj.values():
+            for target in outgoing:
+                indegree[target] += 1
+        ready = sorted(node for node, degree in indegree.items() if degree == 0)
+        order: list[str] = []
+        while ready:
+            node = ready.pop(0)
+            order.append(node)
+            for target in sorted(self._adj[node]):
+                indegree[target] -= 1
+                if indegree[target] == 0:
+                    ready.append(target)
+                    ready.sort()
+        return tuple(order)
 
 
-def _add_version_edges(graph: _Graph, ops: list[Operation]) -> None:
-    # Index writers of (scope, version) and all writers per scope.
+def _invalid(reason: str, *, checked: bool = False) -> PSSVerdict:
+    return PSSVerdict(False, (), reason, decision_semantics_checked=checked)
+
+
+def _scope_versions(accesses: tuple[ScopeAccess, ...]) -> tuple[dict[str, ScopeAccess], str | None]:
+    by_scope: dict[str, ScopeAccess] = {}
+    for access in accesses:
+        if not access.scope:
+            return {}, "contains an empty scope name"
+        if access.version < 0:
+            return {}, f"uses negative version {access.version} for {access.scope}"
+        existing = by_scope.get(access.scope)
+        if existing is not None and existing.version != access.version:
+            return {}, (
+                f"reads multiple versions of {access.scope} "
+                f"({existing.version} and {access.version})"
+            )
+        by_scope[access.scope] = access
+    return by_scope, None
+
+
+def _validate_history(history: History) -> _ValidatedHistory | str:
+    operations = history.operations
+    operation_ids = [operation.op_id for operation in operations]
+    if len(set(operation_ids)) != len(operation_ids):
+        return "history contains duplicate transition identities"
+    if any(not operation.op_id for operation in operations):
+        return "history contains an empty transition identity"
+
+    initial_state, initial_error = _scope_versions(history.initial_versions)
+    if initial_error is not None:
+        return f"initial policy state {initial_error}"
+
+    writers_by_scope: dict[str, list[tuple[int, str]]] = defaultdict(list)
     writer_of: dict[tuple[str, int], str] = {}
-    writers_by_scope: dict[str, list[tuple[int, str]]] = {}
-    for op in ops:
-        for w in op.effect_writes:
-            writer_of[(w.scope, w.version)] = op.op_id
-            writers_by_scope.setdefault(w.scope, []).append((w.version, op.op_id))
+    reads_by_operation: dict[str, dict[str, ScopeAccess]] = {}
 
-    # WR edges: reader of (scope, v) must follow the writer that produced v.
-    for op in ops:
-        for r in (*op.policy_reads, *op.effect_reads):
-            writer = writer_of.get((r.scope, r.version))
-            if writer is not None and writer != op.op_id:
-                graph.add_edge(writer, op.op_id)
+    for operation in operations:
+        if operation.begin_ns < 0 or operation.commit_ns < operation.begin_ns:
+            return f"operation {operation.op_id} has an invalid real-time interval"
+        if operation.decision is not None and operation.decision != (
+            "allow" if operation.committed else "deny"
+        ):
+            return f"operation {operation.op_id} has a decision inconsistent with committed"
+        if not operation.committed and operation.effect_writes:
+            return f"denied operation {operation.op_id} contains policy-state writes"
+        reads, read_error = _scope_versions(operation.reads)
+        if read_error is not None:
+            return f"operation {operation.op_id} {read_error}"
+        reads_by_operation[operation.op_id] = reads
+        writes, write_error = _scope_versions(operation.effect_writes)
+        if write_error is not None:
+            return f"operation {operation.op_id} {write_error}"
+        if len(writes) != len(operation.effect_writes):
+            return f"operation {operation.op_id} writes one scope more than once"
+        for write in operation.effect_writes:
+            key = (write.scope, write.version)
+            if key in writer_of:
+                return (
+                    f"operations {writer_of[key]} and {operation.op_id} both write "
+                    f"{write.scope} version {write.version}"
+                )
+            writer_of[key] = operation.op_id
+            writers_by_scope[write.scope].append((write.version, operation.op_id))
 
-    # WW edges: order writers of the same scope by version.
-    for scope_writers in writers_by_scope.values():
-        ordered = [op_id for _version, op_id in sorted(scope_writers)]
-        for earlier, later in pairwise(ordered):
-            graph.add_edge(earlier, later)
+    scopes = set(initial_state) | set(writers_by_scope)
+    scopes.update(access.scope for operation in operations for access in operation.reads)
+    for scope in scopes:
+        base = initial_state.get(scope, ScopeAccess(scope, 0))
+        initial_state.setdefault(scope, base)
+        expected = base.version + 1
+        for version, _operation_id in sorted(writers_by_scope.get(scope, [])):
+            if version != expected:
+                return (
+                    f"scope {scope} has non-contiguous write versions: expected {expected}, "
+                    f"found {version}"
+                )
+            expected += 1
+
+    for operation in operations:
+        for read in reads_by_operation[operation.op_id].values():
+            baseline_version = initial_state[read.scope].version
+            if read.version < baseline_version:
+                return (
+                    f"operation {operation.op_id} reads {read.scope} version {read.version} "
+                    f"before retained baseline {baseline_version}"
+                )
+            if read.version > baseline_version and (read.scope, read.version) not in writer_of:
+                return (
+                    f"operation {operation.op_id} reads unknown {read.scope} "
+                    f"version {read.version}"
+                )
+
+    return _ValidatedHistory(
+        operations=operations,
+        initial_state=MappingProxyType(dict(initial_state)),
+        writers=MappingProxyType(
+            {scope: tuple(sorted(writers)) for scope, writers in writers_by_scope.items()}
+        ),
+        writer_of=MappingProxyType(dict(writer_of)),
+    )
 
 
-def _add_realtime_edges(graph: _Graph, ops: list[Operation]) -> None:
-    # i -> j when i's terminal event precedes j's begin event.
-    # O(n^2) is appropriate for the bounded histories this verifier accepts.
-    for i in ops:
-        for j in ops:
-            if i.op_id != j.op_id and i.commit_ns < j.begin_ns:
-                graph.add_edge(i.op_id, j.op_id)
+def _build_graph(validated: _ValidatedHistory, *, real_time: bool) -> _Graph:
+    graph = _Graph(tuple(operation.op_id for operation in validated.operations))
+    for operation in validated.operations:
+        reads, _ = _scope_versions(operation.reads)
+        for read in reads.values():
+            writer = validated.writer_of.get((read.scope, read.version))
+            if writer is not None:
+                graph.add(
+                    PSSDependency(
+                        writer,
+                        operation.op_id,
+                        DependencyKind.WR,
+                        read.scope,
+                        read.version,
+                    )
+                )
+            for write_version, writer_id in validated.writers.get(read.scope, ()):
+                if write_version > read.version:
+                    graph.add(
+                        PSSDependency(
+                            operation.op_id,
+                            writer_id,
+                            DependencyKind.RW,
+                            read.scope,
+                            read.version,
+                        )
+                    )
 
+    for scope, writers in validated.writers.items():
+        for (_earlier_version, earlier_id), (later_version, later_id) in pairwise(writers):
+            graph.add(PSSDependency(earlier_id, later_id, DependencyKind.WW, scope, later_version))
 
-def _inconsistent_policy_snapshot(ops: list[Operation]) -> tuple[str, str] | None:
-    """Reject one operation that assigns multiple versions to one scope."""
-
-    for op in ops:
-        versions_by_scope: dict[str, int] = {}
-        for read in op.policy_reads:
-            existing = versions_by_scope.setdefault(read.scope, read.version)
-            if existing != read.version:
-                return op.op_id, read.scope
-    return None
-
-
-def _read_legality_violation(ops: list[Operation]) -> tuple[str, str] | None:
-    """Find a stale read: two COMMITTED ops that read the same (scope, version).
-
-    In any serial order the second reader of a version would instead observe the
-    write that advanced the scope, so two committed ops sharing a read-version
-    cannot both be legal (Def. 1 clause 2). Returns (op_id, scope) of the second
-    such reader, or None. Denied ops are exempt (they write nothing, so a stale
-    read that produced no effect is harmless).
-    """
-    seen: dict[tuple[str, int], str] = {}
-    for op in ops:
-        if not op.committed:
-            continue
-        for key in {(read.scope, read.version) for read in op.policy_reads}:
-            if key in seen:
-                return op.op_id, key[0]
-            seen[key] = op.op_id
-    return None
-
-
-def check_pss(history: History, *, real_time: bool = True) -> PSSVerdict:
-    """Decide PSS for a recorded history.
-
-    ``real_time=False`` checks conflict-serializability + read-legality (0.9a);
-    the default adds the real-time constraint for full PSS (0.9b).
-    """
-    ops = list(history.operations)
-
-    inconsistent = _inconsistent_policy_snapshot(ops)
-    if inconsistent is not None:
-        op_id, scope = inconsistent
-        return PSSVerdict(
-            pss=False,
-            cycle=(op_id,),
-            reason=(
-                f"inconsistent policy snapshot: operation {op_id} read multiple versions of {scope}"
-            ),
-        )
-
-    # Part 2 first (cheap, and the common stale-auth signature): read legality.
-    stale = _read_legality_violation(ops)
-    if stale is not None:
-        op_id, scope = stale
-        return PSSVerdict(
-            pss=False,
-            cycle=(op_id,),
-            reason=(
-                f"stale authorization: committed op {op_id} read a version of "
-                f"{scope} already read by another committed op (no serial order "
-                f"explains both)"
-            ),
-        )
-
-    # Part 1: serialization graph acyclicity (+ real-time).
-    graph = _Graph([op.op_id for op in ops])
-    _add_version_edges(graph, ops)
     if real_time:
-        _add_realtime_edges(graph, ops)
+        for earlier in validated.operations:
+            for later in validated.operations:
+                if earlier.op_id != later.op_id and earlier.commit_ns < later.begin_ns:
+                    graph.add(PSSDependency(earlier.op_id, later.op_id, DependencyKind.REAL_TIME))
+    return graph
 
+
+def _cycle_reason(cycle: tuple[str, ...], dependencies: tuple[PSSDependency, ...]) -> str:
+    pairs = tuple(zip(cycle, (*cycle[1:], cycle[0]), strict=True))
+    edge_kinds = [
+        next(
+            dependency.kind.value
+            for dependency in dependencies
+            if dependency.source == source and dependency.target == target
+        )
+        for source, target in pairs
+    ]
+    return (
+        f"serialization cycle ({' -> '.join(edge_kinds)}) "
+        f"among {' -> '.join(cycle)} -> {cycle[0]}"
+    )
+
+
+def _replay_witness(
+    validated: _ValidatedHistory,
+    order: tuple[str, ...],
+    *,
+    decision_validator: DecisionValidator | None,
+) -> str | None:
+    state = dict(validated.initial_state)
+    by_id = {operation.op_id: operation for operation in validated.operations}
+    for operation_id in order:
+        operation = by_id[operation_id]
+        reads, _ = _scope_versions(operation.reads)
+        for scope, read in reads.items():
+            current = state[scope]
+            if current.version != read.version:
+                return (
+                    f"serial witness reads {scope} version {read.version} for {operation_id}, "
+                    f"but current version is {current.version}"
+                )
+        if decision_validator is not None:
+            decision_error = decision_validator(operation, MappingProxyType(dict(state)))
+            if decision_error is not None:
+                return f"decision replay rejected {operation_id}: {decision_error}"
+        for write in operation.effect_writes:
+            current = state[write.scope]
+            if write.version != current.version + 1:
+                return (
+                    f"serial witness writes {write.scope} version {write.version} "
+                    f"for {operation_id}, "
+                    f"but current version is {current.version}"
+                )
+            state[write.scope] = write
+    return None
+
+
+def check_pss(
+    history: History,
+    *,
+    real_time: bool = True,
+    decision_validator: DecisionValidator | None = None,
+) -> PSSVerdict:
+    """Verify PSS for a complete declared versioned-access history.
+
+    The checker proves existence of a serial witness for the exact reads and
+    writes in the history.  Supplying ``decision_validator`` additionally
+    checks every terminal decision, including denials, against provider-retained
+    policy evidence at its witness position.  Without one, the verdict is a
+    structural PSS result under the trusted assumption that recorded policy
+    decisions and reads are faithful.
+    """
+
+    validated = _validate_history(history)
+    checked = decision_validator is not None
+    if isinstance(validated, str):
+        return _invalid(f"malformed PSS history: {validated}", checked=checked)
+    graph = _build_graph(validated, real_time=real_time)
+    dependencies = graph.dependencies
     cycle = graph.find_cycle()
     if cycle:
-        kind = "serialization+real-time" if real_time else "serialization"
         return PSSVerdict(
-            pss=False,
-            cycle=tuple(cycle),
-            reason=f"{kind} cycle among {' -> '.join(cycle)} -> {cycle[0]}",
+            False,
+            cycle,
+            _cycle_reason(cycle, dependencies),
+            dependencies=dependencies,
+            decision_semantics_checked=checked,
         )
-    return PSSVerdict(
-        pss=True, cycle=(), reason="acyclic + reads legal; a valid serial order exists"
+    order = graph.topological_order()
+    if len(order) != len(validated.operations):
+        return _invalid("serialization graph did not yield a complete witness", checked=checked)
+    replay_error = _replay_witness(
+        validated,
+        order,
+        decision_validator=decision_validator,
     )
+    if replay_error is not None:
+        return PSSVerdict(
+            False,
+            (),
+            replay_error,
+            serial_order=order,
+            dependencies=dependencies,
+            decision_semantics_checked=checked,
+        )
+    suffix = (
+        "; policy decisions replayed"
+        if checked
+        else "; policy predicates not replayed (trusted recorded-decision evidence)"
+    )
+    return PSSVerdict(
+        True,
+        (),
+        f"acyclic WR/WW/RW/real-time dependencies + serial read/write replay{suffix}",
+        serial_order=order,
+        dependencies=dependencies,
+        decision_semantics_checked=checked,
+    )
+
+
+__all__ = ["DecisionValidator", "DependencyKind", "PSSDependency", "PSSVerdict", "check_pss"]

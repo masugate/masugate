@@ -42,7 +42,7 @@ policy state.
 |---|---|
 | The evidence retains a stale concurrent baseline for inspection. | The governed execution is PSS-valid and retains a successful receipt of its decision and effect. |
 
-> **Research-preview boundary:** this `0.1.0` release is not a
+> **Research-preview boundary:** this `0.1.1` release is not a
 > general compliance product, a distributed transaction system, or an assurance
 > claim for arbitrary hosts, policies, models, or external services.
 
@@ -172,4 +172,4 @@ reference profiles: their credentialed live checks are optional and must report
 `SKIPPED` when credentials or network access are unavailable. No command in
 this repository should require a credential for the required local tier.
 
-Version: `0.1.0` (research preview). Next: [Artifact evaluation](docs/artifact-evaluation.md).
+Version: `0.1.1` (research preview). Next: [Artifact evaluation](docs/artifact-evaluation.md).

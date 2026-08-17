@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.1 — 2026-08-17
+
+- Correct Policy-State Serializability (PSS): add RW anti-dependencies,
+  validate complete version chains, and replay the serial witness rather than
+  using the unsound duplicate-read shortcut.
+- Add a bounded exhaustive PSS oracle and counterexamples for write skew,
+  shared unchanged reads, stale denials, and visible reservations.
+- Retain explicit decision, policy, timing, causal-transition, and certified
+  policy-read-value evidence in the reference procurement realization; its
+  fixed spend predicate is replayed during workload verification.
+- Record the correction, evidence boundary, and paper/re-measurement gates in
+  `docs/pss-v0.1.1-correction.md`. Existing v0.1.0 PSS measurements require
+  rerunning before they support the corrected general claim.
+- Advance the coordinated research-preview artifact identities to `0.1.1`.
+
 ## 0.1.0 — 2026-08-10
 
 - Correct Python package metadata and require descriptor verification in source CI.
@@ -17,4 +32,4 @@
 - Calendar and Stripe live validation remain optional and report `SKIPPED`
   without the required disposable credentials and network access.
 
-Version: `0.1.0` (research preview). Next: [Project overview](README.md).
+Version: `0.1.1` (research preview). Next: [Project overview](README.md).

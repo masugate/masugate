@@ -63,7 +63,7 @@ def _release_descriptor_fixture(runner: Any) -> dict[str, object]:
     }
     return {
         "schema_version": runner._RELEASE_DESCRIPTOR_SCHEMA,
-        "release_id": "masugate-openclaw-reference/0.1.0",
+        "release_id": "masugate-openclaw-reference/0.1.1",
         "source_revision": "a" * 40,
         "staging_realization_revision": "b" * 40,
         "release_manifest_sha256": "4" * 64,
@@ -511,7 +511,11 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                 },
                 "committed_cents": 6_000,
                 "budget_valid": True,
-                "pss": {"valid": True, "reason": "fixture"},
+                "pss": {
+                    "valid": True,
+                    "reason": "fixture",
+                    "decision_semantics_checked": True,
+                },
                 "terminal_statuses": ["committed", "denied"],
                 "history": [
                     {
@@ -521,9 +525,13 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "begin_ns": 1,
                         "terminal_ns": 3,
                         "committed": True,
-                        "policy_reads": [{"scope": "spend:team:research", "version": 0}],
+                        "policy_reads": [
+                            {"scope": "spend:team:research", "version": 0, "value": 10_000}
+                        ],
                         "effect_reads": [],
-                        "effect_writes": [{"scope": "spend:team:research", "version": 1}],
+                        "effect_writes": [
+                            {"scope": "spend:team:research", "version": 1, "value": 4_000}
+                        ],
                     },
                     {
                         "operation_id": "22222222-2222-4222-8222-222222222222",
@@ -532,7 +540,9 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "begin_ns": 1,
                         "terminal_ns": 4,
                         "committed": False,
-                        "policy_reads": [{"scope": "spend:team:research", "version": 1}],
+                        "policy_reads": [
+                            {"scope": "spend:team:research", "version": 1, "value": 4_000}
+                        ],
                         "effect_reads": [],
                         "effect_writes": [],
                     },
@@ -544,8 +554,12 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "terminal_ns": 6,
                         "committed": True,
                         "policy_reads": [],
-                        "effect_reads": [{"scope": "spend:team:research", "version": 1}],
-                        "effect_writes": [{"scope": "spend:team:research", "version": 2}],
+                        "effect_reads": [
+                            {"scope": "spend:team:research", "version": 1, "value": 4_000}
+                        ],
+                        "effect_writes": [
+                            {"scope": "spend:team:research", "version": 2, "value": 4_000}
+                        ],
                     },
                 ],
                 "final_policy_state": {
@@ -570,7 +584,11 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
         kind="governed",
     )
     verdict = check_pss(history)
-    governed["pss"] = {"valid": verdict.pss, "reason": verdict.reason}
+    governed["pss"] = {
+        "valid": verdict.pss,
+        "reason": verdict.reason,
+        "decision_semantics_checked": True,
+    }
     return evidence, release
 
 
@@ -583,11 +601,8 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
     assert report["stale_authorization"] is True
     assert report["pss"] == {
         "valid": False,
-        "reason": (
-            "stale authorization: committed op weak-beta read a version of "
-            "spend:team:research already read by another committed op "
-            "(no serial order explains both)"
-        ),
+        "reason": "serialization cycle (RW -> RW) among weak-alpha -> weak-beta -> weak-alpha",
+        "decision_semantics_checked": True,
     }
     history = report["history"]
     assert isinstance(history, list)
@@ -598,10 +613,13 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
         operation["terminal_ns"] for operation in history
     )
     assert all(
-        operation["policy_reads"] == [{"scope": "spend:team:research", "version": 0}]
+        operation["policy_reads"]
+        == [{"scope": "spend:team:research", "version": 0, "value": 10_000}]
         for operation in history
     )
     assert {operation["effect_writes"][0]["version"] for operation in history} == {1, 2}
+    assert {operation["effect_writes"][0]["value"] for operation in history} == {4_000, -2_000}
+    assert all(operation["decision"] == "allow" for operation in history)
     ledger = report["effect_ledger"]
     assert isinstance(ledger, list)
     assert {row["operation_id"] for row in ledger} == {"weak-alpha", "weak-beta"}
@@ -1329,7 +1347,7 @@ def test_runner_stages_containment_assets_from_reference_wheel(
     contract.mkdir(parents=True)
     for name in ("package.json", "package-lock.json"):
         shutil.copy2(ROOT / "integrations" / "openclaw-contract" / name, contract / name)
-    wheel = wheel_dir / "masugate_openclaw_reference-0.1.0-py3-none-any.whl"
+    wheel = wheel_dir / "masugate_openclaw_reference-0.1.1-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
         for name in (
             "masugate_openclaw_reference/containment/Dockerfile.reference_demo-reference",
@@ -1445,7 +1463,7 @@ def _write_verified_release_fixture(
     *,
     revision: str,
 ) -> None:
-    artifact = release / "python" / "masugate" / "masugate-0.1.0.whl"
+    artifact = release / "python" / "masugate" / "masugate-0.1.1.whl"
     artifact.parent.mkdir(parents=True)
     artifact.write_bytes(b"verified artifact")
     deployment = release / "deployment"

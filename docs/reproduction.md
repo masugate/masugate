@@ -120,4 +120,4 @@ Stop any demo stack, remove its disposable output directory, and revoke or
 rotate any test-only secret according to the service owner’s procedure. Never
 delete an existing database, user directory, or mount as part of cleanup.
 
-Version: `0.1.0` (research preview). Next: [Expected results](expected-results.md).
+Version: `0.1.1` (research preview). Next: [Expected results](expected-results.md).

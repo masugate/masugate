@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from masugate.pss import Operation, ScopeAccess, budget_history_from_events, check_pss
+from masugate.pss import (
+    DependencyKind,
+    Operation,
+    ScopeAccess,
+    budget_history_from_events,
+    check_pss,
+    check_pss_exhaustively,
+)
 from masugate.pss.model import History
 
 S = "team-budget:research"
@@ -41,12 +48,15 @@ def test_valid_serial_is_pss() -> None:
 
 
 def test_stale_authorization_is_not_pss() -> None:
-    # Both read v0 and both commit (the minimal stale race). Read-legality fails.
+    # Both read v0 and both commit (the minimal stale race).  Each read is an
+    # RW anti-dependency to the other operation's next-version write.
     a = _op("A", begin=0, commit=10, committed=True, reads=[(S, 0)], writes=[(S, 1)])
     b = _op("B", begin=1, commit=11, committed=True, reads=[(S, 0)], writes=[(S, 2)])
     v = check_pss(History((a, b)))
     assert not v.pss
-    assert "stale authorization" in v.reason
+    assert v.cycle == ("A", "B")
+    assert {edge.kind for edge in v.dependencies} == {DependencyKind.RW, DependencyKind.WW}
+    assert not check_pss_exhaustively(History((a, b))).pss
 
 
 def test_repeated_views_of_one_scope_share_one_snapshot() -> None:
@@ -72,7 +82,7 @@ def test_one_operation_with_conflicting_scope_versions_is_not_pss() -> None:
     )
     verdict = check_pss(History((op,)))
     assert not verdict.pss
-    assert "inconsistent policy snapshot" in verdict.reason
+    assert "reads multiple versions" in verdict.reason
 
 
 def test_denied_op_may_read_stale_version() -> None:
@@ -188,3 +198,132 @@ def test_budget_history_adapter_preserves_a_sparse_committed_race() -> None:
         initial_spend_by_team={"research": 0},
     )
     assert not check_pss(history).pss
+
+
+# --------------------------------------------------------------------------- #
+# v0.1.1 PSS correction cases.
+# --------------------------------------------------------------------------- #
+
+
+def test_write_skew_requires_rw_anti_dependencies() -> None:
+    """A classic write skew has no WR or WW conflict but is not PSS.
+
+    A observes x=0 and writes y=1; B observes y=0 and writes x=1.  No serial
+    order can explain both observations: whichever transition goes second must
+    observe the other's write.
+    """
+
+    a = _op("A", 0, 10, committed=True, reads=[("x", 0)], writes=[("y", 1)])
+    b = _op("B", 0, 10, committed=True, reads=[("y", 0)], writes=[("x", 1)])
+    history = History((a, b))
+
+    verdict = check_pss(history)
+    oracle = check_pss_exhaustively(history)
+
+    assert not verdict.pss
+    assert not oracle.pss
+    assert verdict.cycle == ("A", "B")
+    assert {edge.kind for edge in verdict.dependencies} == {DependencyKind.RW}
+
+
+def test_shared_read_of_unchanged_policy_state_is_pss() -> None:
+    """Two allows may share a read when neither effect advances that scope."""
+
+    a = _op("A", 0, 10, committed=True, reads=[("risk", 0)], writes=[("x", 1)])
+    b = _op("B", 0, 10, committed=True, reads=[("risk", 0)], writes=[("y", 1)])
+    history = History((a, b))
+
+    verdict = check_pss(history)
+    oracle = check_pss_exhaustively(history)
+
+    assert verdict.pss, verdict.reason
+    assert oracle.pss, oracle.reason
+    assert set(verdict.serial_order) == {"A", "B"}
+
+
+def test_real_time_forces_rejection_of_a_stale_denial() -> None:
+    """A denied decision must also read the state at its serial position."""
+
+    update = _op("update", 0, 10, committed=True, writes=[("flag", 1)])
+    denied = _op("denied", 20, 30, committed=False, reads=[("flag", 0)])
+    history = History((update, denied))
+
+    verdict = check_pss(history)
+
+    assert not verdict.pss
+    assert {edge.kind for edge in verdict.dependencies} == {
+        DependencyKind.RW,
+        DependencyKind.REAL_TIME,
+    }
+    assert not check_pss_exhaustively(history).pss
+
+
+def test_explicit_baseline_allows_a_retained_history_suffix() -> None:
+    later = _op("later", 0, 10, committed=True, reads=[("budget", 5)], writes=[("budget", 6)])
+    history = History((later,), initial_versions=(ScopeAccess("budget", 5),))
+
+    assert check_pss(history).pss
+    assert check_pss_exhaustively(history).pss
+
+
+def test_observable_reservation_is_a_separate_transition() -> None:
+    reserve = Operation(
+        op_id="purchase:reservation",
+        begin_ns=0,
+        commit_ns=10,
+        committed=True,
+        policy_reads=(ScopeAccess("capacity", 0),),
+        effect_writes=(ScopeAccess("capacity", 1),),
+        causal_operation_id="purchase",
+        transition_kind="coordination-reservation",
+    )
+    denied = Operation(
+        op_id="competitor",
+        begin_ns=1,
+        commit_ns=11,
+        committed=False,
+        policy_reads=(ScopeAccess("capacity", 1),),
+        transition_kind="terminal-denial",
+    )
+    settle = Operation(
+        op_id="purchase:settlement",
+        begin_ns=20,
+        commit_ns=30,
+        committed=True,
+        effect_reads=(ScopeAccess("capacity", 1),),
+        effect_writes=(ScopeAccess("capacity", 2),),
+        causal_operation_id="purchase",
+        transition_kind="terminal-settlement",
+    )
+    history = History((reserve, denied, settle))
+
+    verdict = check_pss(history)
+    assert verdict.pss, verdict.reason
+    assert verdict.serial_order == ("purchase:reservation", "competitor", "purchase:settlement")
+    assert check_pss_exhaustively(history).pss
+
+
+def test_provider_decision_validator_checks_all_terminal_decisions() -> None:
+    denied = Operation(
+        op_id="denied",
+        begin_ns=0,
+        commit_ns=10,
+        committed=False,
+        decision="deny",
+        policy_reads=(ScopeAccess("risk", 0, 10),),
+        policy_id="risk-guard",
+        policy_version="v1",
+        evaluation_time="2026-08-17T00:00:00Z",
+        evaluation_input_digest="0" * 64,
+    )
+
+    def validator(operation: Operation, _state: object) -> str | None:
+        if operation.declared_decision != "allow":
+            return "risk policy permits the recorded read value"
+        return None
+
+    verdict = check_pss(History((denied,)), decision_validator=validator)
+    assert not verdict.pss
+    assert verdict.decision_semantics_checked
+    assert "decision replay rejected denied" in verdict.reason
+    assert not check_pss_exhaustively(History((denied,)), decision_validator=validator).pss

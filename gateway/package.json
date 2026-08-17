@@ -1,6 +1,6 @@
 {
   "name": "@masugate/mcp-gateway",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP stdio proxy that routes declared effects through MasuGate",
   "license": "Apache-2.0",
   "homepage": "https://github.com/masugate/masugate",
@@ -39,7 +39,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@masugate/client": "0.1.0",
+    "@masugate/client": "0.1.1",
     "@modelcontextprotocol/sdk": "1.29.0",
     "jsonpath-plus": "10.3.0",
     "yaml": "2.8.3",

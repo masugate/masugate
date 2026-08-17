@@ -37,7 +37,7 @@ export function resolveUpstreamEnvironment(
 
 export class McpStdioUpstream implements Upstream {
   readonly #client = new Client(
-    { name: "masugate-mcp-gateway-upstream", version: "0.1.0" },
+    { name: "masugate-mcp-gateway-upstream", version: "0.1.1" },
     { capabilities: {} },
   );
   readonly #transport: StdioClientTransport;

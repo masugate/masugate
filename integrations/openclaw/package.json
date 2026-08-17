@@ -1,6 +1,6 @@
 {
   "name": "@masugate/openclaw",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Trusted OpenClaw adapter for MasuGate-owned governed tools",
   "license": "Apache-2.0",
   "homepage": "https://github.com/masugate/masugate",
@@ -47,8 +47,8 @@
     "postpack": "node scripts/clean-bundled-runtime.mjs"
   },
   "dependencies": {
-    "@masugate/adapter-core": "0.1.0",
-    "@masugate/client": "0.1.0",
+    "@masugate/adapter-core": "0.1.1",
+    "@masugate/client": "0.1.1",
     "typebox": "1.3.3"
   },
   "bundledDependencies": [

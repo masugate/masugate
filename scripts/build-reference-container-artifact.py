@@ -182,7 +182,7 @@ def _container_artifact_temporary_directory(prefix: str) -> tempfile.TemporaryDi
 
 
 def _tag(role: str, manifest_sha256: str) -> str:
-    return f"masugate-reference-artifact/{role}:0.1.0-{manifest_sha256[:16]}"
+    return f"masugate-reference-artifact/{role}:0.1.1-{manifest_sha256[:16]}"
 
 
 def _image_id(docker: str, tag: str, environment: Mapping[str, str]) -> str:

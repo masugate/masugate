@@ -101,7 +101,7 @@ def test_release_control_verifier_rejects_misnested_project_dependencies(
     candidate.write_text(
         "[project]\n"
         "name = \"candidate\"\n"
-        "version = \"0.1.0\"\n\n"
+        "version = \"0.1.1\"\n\n"
         "[project.urls]\n"
         "Homepage = \"https://github.com/masugate/masugate\"\n"
         "Source = \"https://github.com/masugate/masugate\"\n"

@@ -1,7 +1,7 @@
 # Testing
 
 **Audience:** developers and artifact reviewers. Read the [Code map](code-map.md)
-first. **Supported boundary:** the `0.1.0` research-preview release,
+first. **Supported boundary:** the `0.1.1` research-preview release,
 its pinned OpenClaw reference profile, and the test paths present in this tree.
 Legacy marker tokens are exact command-line selectors; they are not broader
 product or assurance levels.
@@ -223,5 +223,5 @@ pass: results must be bound to the required artifact and environment.
 - Generated test evidence, packages, release archives, and container state
   belong below explicit disposable output paths, never in the source tree.
 
-Version: `0.1.0` (research preview). Next:
+Version: `0.1.1` (research preview). Next:
 [Protocol](protocol.md).

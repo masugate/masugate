@@ -9,7 +9,7 @@ OpenClaw configuration.
 
 ## Composition
 
-`masugate-openclaw-reference` is a distinct `0.1.0` research-preview Python
+`masugate-openclaw-reference` is a distinct `0.1.1` research-preview Python
 distribution. The reusable `masugate` package excludes the deployment-specific
 OpenClaw code. The checked-in reference descriptor at
 [`../../release/reference-release.json`](../../release/reference-release.json)
@@ -66,4 +66,4 @@ general host-sandbox proof or a public deployment recipe. Optional live
 integration work must be explicitly configured and reported as `SKIPPED` when
 credentials or network access are unavailable.
 
-Version: `0.1.0` (research preview). Next: [Architecture](../../docs/architecture.md).
+Version: `0.1.1` (research preview). Next: [Architecture](../../docs/architecture.md).

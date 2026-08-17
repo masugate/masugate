@@ -1,10 +1,12 @@
 """Adapters from recorded budget-operation events to PSS ``History`` values.
 
 Some event sources record the shared budget scope, decision, effect outcome,
-and operation timing rather than explicit policy-state versions.  This helper
-reconstructs the corresponding scope accesses so the general PSS checker can
-evaluate the recorded schedule.  Event sources that retain actual
-``ViewRead.version`` values should construct ``History`` directly instead.
+and operation timing rather than explicit policy-state versions. This helper
+constructs a *diagnostic reconstruction* of scope accesses for those sparse
+events. It is not certified PSS evidence: a reconstructed read version cannot
+prove what a provider actually observed or replay an arbitrary policy decision.
+Event sources that retain actual ``ViewRead.version`` values must construct
+``History`` directly for a claim-bearing PSS check.
 
 The reconstruction uses the number of committed operations on a scope whose
 terminal event precedes an operation's start as that operation's observed
@@ -36,7 +38,8 @@ def budget_history_from_events(
     operation reads the version that was available when it started and writes
     the next version; a denied operation reads but writes no effect.  The
     checker then detects whether the resulting schedule permits a legal serial
-    explanation.
+    explanation. This compatibility adapter must not be used as evidence that
+    a provider retained certified read-from or policy-decision information.
     """
 
     # Retain the accepted public parameter for API compatibility.  The history

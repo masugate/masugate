@@ -2,7 +2,7 @@
   "id": "masugate-reference-content",
   "name": "MasuGate reference content",
   "description": "Deployment-owned fixed-document reader for the MasuGate OpenClaw reference profile.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "contracts": {
     "tools": ["masugate_reference_content"]
   },

@@ -19,4 +19,4 @@ For protocol failures, compare the response with the closed schema in
 start with [Connectors](connectors.md). For an action lifecycle question, use
 the [walkthrough](governed-action-walkthrough.md).
 
-Version: `0.1.0` (research preview). Next: [Testing](testing.md).
+Version: `0.1.1` (research preview). Next: [Testing](testing.md).

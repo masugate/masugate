@@ -43,7 +43,7 @@ const runtime = {
 const record = {
   id: "masugate-contract-probe",
   name: "MasuGate contract probe",
-  version: "0.1.0",
+  version: "0.1.1",
   description: "pinned next-turn durability oracle",
   source: resolve(root, "dist/src/contract-probe.js"),
   rootDir: root,

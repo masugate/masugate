@@ -51,4 +51,4 @@ flowchart TD
   tests --> core
 ```
 
-Version: `0.1.0` (research preview). Next: [Governed action walkthrough](governed-action-walkthrough.md).
+Version: `0.1.1` (research preview). Next: [Governed action walkthrough](governed-action-walkthrough.md).

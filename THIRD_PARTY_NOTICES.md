@@ -34,4 +34,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-Version: `0.1.0` (research preview). Next: [Changelog](CHANGELOG.md).
+Version: `0.1.1` (research preview). Next: [Changelog](CHANGELOG.md).

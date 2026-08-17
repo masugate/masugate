@@ -39,4 +39,4 @@ renamed code-level identifiers, and the relevant package/schema validation.
 When an extension changes a recorded claim, premise, exclusion, or evidence
 gate, stop for a separate claim decision rather than revising prose alone.
 
-Version: `0.1.0` (research preview). Next: [Connectors](connectors.md).
+Version: `0.1.1` (research preview). Next: [Connectors](connectors.md).

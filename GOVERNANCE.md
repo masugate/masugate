@@ -10,4 +10,4 @@ requires the configured review and protection controls. Conduct and security
 reports follow the adjacent [code of conduct](CODE_OF_CONDUCT.md) and
 [security policy](SECURITY.md).
 
-Version: `0.1.0` (research preview). Next: [Code of conduct](CODE_OF_CONDUCT.md).
+Version: `0.1.1` (research preview). Next: [Code of conduct](CODE_OF_CONDUCT.md).

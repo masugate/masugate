@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "masugate-client"
-version = "0.1.0"
+version = "0.1.1"
 description = "Typed asynchronous Python client for the MasuGate Governed Action Protocol"
 readme = "README.md"
 requires-python = ">=3.10"

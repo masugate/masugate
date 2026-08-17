@@ -112,7 +112,7 @@ class MasuGateClient:
         headers = {
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
-            "User-Agent": "masugate-client-python/0.1.0",
+            "User-Agent": "masugate-client-python/0.1.1",
         }
         if principal_id is not None:
             headers["MasuGate-Expected-Principal"] = principal_id

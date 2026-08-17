@@ -1,6 +1,6 @@
 # MasuGate documentation
 
-This map is for the `0.1.0` research-preview release. It uses stable product and
+This map is for the `0.1.1` research-preview release. It uses stable product and
 code names; it does not describe private migration history.
 
 ## Reader and researcher path
@@ -13,6 +13,8 @@ code names; it does not describe private migration history.
 - [Claims and limitations](claims-and-limitations.md) states the ten recorded
   affirmative claims, their premises and required evidence, and the seven
   guarantees expressly excluded from the release boundary.
+- [PSS correction record](pss-v0.1.1-correction.md) records the v0.1.1
+  serializability correction and the re-measurement boundary for prior data.
 
 ## Artifact reviewer path
 
@@ -37,4 +39,4 @@ code names; it does not describe private migration history.
 - [Framework adapters](framework-adapters.md), the [CrewAI adapter profile](adapters/crewai.md),
   [Protocol](protocol.md), and [Connectors](connectors.md) describe their public contracts.
 
-Version: `0.1.0` (research preview). Next: [Concepts](concepts.md).
+Version: `0.1.1` (research preview). Next: [Concepts](concepts.md).

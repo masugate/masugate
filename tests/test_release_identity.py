@@ -349,7 +349,7 @@ def test_reference_release_manifest_refuses_reference_dependency_source_drift() 
         project = original_project(path)
         if path == (builder.ROOT / "integrations" / "openclaw-reference" / "pyproject.toml"):
             project = dict(project)
-            project["dependencies"] = ["masugate>=0.1.0", "masugate-client==0.1.0"]
+            project["dependencies"] = ["masugate>=0.1.1", "masugate-client==0.1.1"]
         return cast(dict[str, object], project)
 
     builder._toml_project = stale_project
@@ -383,24 +383,24 @@ def test_reference_release_sbom_conforms_to_official_cyclonedx_1_5_schema(
     }
     assert actual_first_party == expected_first_party
     assert set(expected_first_party) == {
-        "pkg:npm/%40masugate/client@0.1.0",
-        "pkg:npm/%40masugate/adapter-core@0.1.0",
-        "pkg:npm/%40masugate/mcp-gateway@0.1.0",
-        "pkg:npm/%40masugate/openclaw@0.1.0",
-        "pkg:pypi/masugate-adapter-core@0.1.0",
-        "pkg:pypi/masugate-agent-framework@0.1.0",
-        "pkg:pypi/masugate-client@0.1.0",
-        "pkg:pypi/masugate-connector-filesystem@0.1.0",
-        "pkg:pypi/masugate-connector-google-calendar@0.1.0",
-        "pkg:pypi/masugate-connector-sdk@0.1.0",
-        "pkg:pypi/masugate-connector-stripe-payment-intent@0.1.0",
-        "pkg:pypi/masugate-crewai@0.1.0",
-        "pkg:pypi/masugate-langchain@0.1.0",
-        "pkg:pypi/masugate-openclaw-reference@0.1.0",
-        "pkg:pypi/masugate-operation-calendar@0.1.0",
-        "pkg:pypi/masugate-operation-filesystem@0.1.0",
-        "pkg:pypi/masugate-operation-spend@0.1.0",
-        "pkg:pypi/masugate@0.1.0",
+        "pkg:npm/%40masugate/client@0.1.1",
+        "pkg:npm/%40masugate/adapter-core@0.1.1",
+        "pkg:npm/%40masugate/mcp-gateway@0.1.1",
+        "pkg:npm/%40masugate/openclaw@0.1.1",
+        "pkg:pypi/masugate-adapter-core@0.1.1",
+        "pkg:pypi/masugate-agent-framework@0.1.1",
+        "pkg:pypi/masugate-client@0.1.1",
+        "pkg:pypi/masugate-connector-filesystem@0.1.1",
+        "pkg:pypi/masugate-connector-google-calendar@0.1.1",
+        "pkg:pypi/masugate-connector-sdk@0.1.1",
+        "pkg:pypi/masugate-connector-stripe-payment-intent@0.1.1",
+        "pkg:pypi/masugate-crewai@0.1.1",
+        "pkg:pypi/masugate-langchain@0.1.1",
+        "pkg:pypi/masugate-openclaw-reference@0.1.1",
+        "pkg:pypi/masugate-operation-calendar@0.1.1",
+        "pkg:pypi/masugate-operation-filesystem@0.1.1",
+        "pkg:pypi/masugate-operation-spend@0.1.1",
+        "pkg:pypi/masugate@0.1.1",
     }
     assert not {
         "clients/typescript",
@@ -505,7 +505,7 @@ def test_reference_release_sbom_validator_rejects_invalid_supply_chain_fields(
     missing["components"] = [
         component
         for component in missing["components"]
-        if component.get("purl") != "pkg:pypi/masugate@0.1.0"
+        if component.get("purl") != "pkg:pypi/masugate@0.1.1"
     ]
     with pytest.raises(builder.ReleaseBuildError, match="first-party component exactly once"):
         builder._validate_sbom(missing, manifest)
@@ -515,9 +515,9 @@ def test_reference_release_sbom_validator_rejects_invalid_supply_chain_fields(
         {
             "type": "library",
             "name": "clients/typescript",
-            "version": "0.1.0",
-            "purl": "pkg:npm/clients%2Ftypescript@0.1.0",
-            "bom-ref": "pkg:npm/clients%2Ftypescript@0.1.0",
+            "version": "0.1.1",
+            "purl": "pkg:npm/clients%2Ftypescript@0.1.1",
+            "bom-ref": "pkg:npm/clients%2Ftypescript@0.1.1",
         }
     )
     with pytest.raises(builder.ReleaseBuildError, match="path-derived workspace identity"):
@@ -528,9 +528,9 @@ def test_reference_release_sbom_validator_rejects_invalid_supply_chain_fields(
         {
             "type": "library",
             "name": "adapters/typescript",
-            "version": "0.1.0",
-            "purl": "pkg:npm/adapters%2Ftypescript@0.1.0",
-            "bom-ref": "pkg:npm/adapters%2Ftypescript@0.1.0",
+            "version": "0.1.1",
+            "purl": "pkg:npm/adapters%2Ftypescript@0.1.1",
+            "bom-ref": "pkg:npm/adapters%2Ftypescript@0.1.1",
         }
     )
     with pytest.raises(builder.ReleaseBuildError, match="path-derived workspace identity"):

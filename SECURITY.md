@@ -13,4 +13,4 @@ The current connector boundary treats connector code as trusted for its assigned
 secret handles and destinations. That is a limit of the implementation boundary,
 not a guarantee that arbitrary connector code is safe.
 
-Version: `0.1.0` (research preview). Next: [Governance](GOVERNANCE.md).
+Version: `0.1.1` (research preview). Next: [Governance](GOVERNANCE.md).

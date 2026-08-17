@@ -29,8 +29,8 @@ runtime uses the client and core wheels:
 
 ```sh
 python -m pip install --no-index --no-deps \
-  /path/to/release/python/masugate-client/masugate_client-0.1.0-py3-none-any.whl \
-  /path/to/release/python/masugate-adapter-core/masugate_adapter_core-0.1.0-py3-none-any.whl
+  /path/to/release/python/masugate-client/masugate_client-0.1.1-py3-none-any.whl \
+  /path/to/release/python/masugate-adapter-core/masugate_adapter_core-0.1.1-py3-none-any.whl
 ```
 
 Install the verified framework runtime separately before its adapter package.
@@ -55,5 +55,5 @@ generated MasuGate tools. A pending lifecycle result is not a framework-level
 approval: resolve it through MasuGate, then re-read the exact MasuGate
 locator as documented by the adapter.
 
-Version: `0.1.0` (research preview). Next:
+Version: `0.1.1` (research preview). Next:
 [Connectors](connectors.md).

@@ -23,7 +23,7 @@
       "const": "masugate.reference-release/v1"
     },
     "release_id": {
-      "const": "masugate-openclaw-reference/0.1.0"
+      "const": "masugate-openclaw-reference/0.1.1"
     },
     "channel": {
       "const": "research-preview"
@@ -85,7 +85,7 @@
               "const": "masugate"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "entry_point": {
               "const": "masugated"
@@ -94,7 +94,7 @@
               "const": "masugate.host-adapter.v1"
             },
             "connector_sdk_dependency": {
-              "const": "masugate-connector-sdk==0.1.0"
+              "const": "masugate-connector-sdk==0.1.1"
             }
           },
           "additionalProperties": false
@@ -110,7 +110,7 @@
               "const": "masugate-connector-sdk"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             }
           },
           "additionalProperties": false
@@ -126,7 +126,7 @@
               "const": "masugate-client"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             }
           },
           "additionalProperties": false
@@ -136,7 +136,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-adapter-core"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -145,7 +145,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-langchain"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -154,7 +154,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-agent-framework"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -163,7 +163,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-crewai"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -172,7 +172,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-connector-google-calendar"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -181,7 +181,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-connector-stripe-payment-intent"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -190,7 +190,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-connector-filesystem"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -199,7 +199,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-operation-calendar"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -208,7 +208,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-operation-spend"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -217,7 +217,7 @@
           "required": ["distribution", "version"],
           "properties": {
             "distribution": {"const": "masugate-operation-filesystem"},
-            "version": {"const": "0.1.0"}
+            "version": {"const": "0.1.1"}
           },
           "additionalProperties": false
         },
@@ -232,7 +232,7 @@
               "const": "@masugate/client"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             }
           },
           "additionalProperties": false
@@ -249,10 +249,10 @@
               "const": "@masugate/adapter-core"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "client_dependency": {
-              "const": "^0.1.0"
+              "const": "^0.1.1"
             }
           },
           "additionalProperties": false
@@ -269,10 +269,10 @@
               "const": "@masugate/mcp-gateway"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "client_dependency": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             }
           },
           "additionalProperties": false
@@ -292,13 +292,13 @@
               "const": "@masugate/openclaw"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "client_dependency": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "adapter_core_dependency": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "bundled_dependencies": {
               "const": [
@@ -327,13 +327,13 @@
               "const": "masugate-openclaw-reference"
             },
             "version": {
-              "const": "0.1.0"
+              "const": "0.1.1"
             },
             "platform_dependency": {
-              "const": "masugate==0.1.0"
+              "const": "masugate==0.1.1"
             },
             "python_client_dependency": {
-              "const": "masugate-client==0.1.0"
+              "const": "masugate-client==0.1.1"
             },
             "schema": {
               "type": "object",

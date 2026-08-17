@@ -7,8 +7,8 @@ authors:
     given-names: Xiaodi
 title: "MasuGate"
 type: software
-version: "0.1.0"
-date-released: "2026-08-10"
+version: "0.1.1"
+date-released: "2026-08-17"
 license: "Apache-2.0"
 repository-code: "https://github.com/masugate/masugate"
 url: "https://github.com/masugate/masugate"

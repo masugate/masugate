@@ -28,11 +28,12 @@ import zipfile
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime
 from pathlib import Path, PurePosixPath
-from typing import cast
+from typing import Literal, cast
 from urllib.parse import urlparse
 from uuid import UUID
 
-from masugate.pss import History, Operation, ScopeAccess, check_pss
+from masugate.pss import History, Operation, ScopeAccess, TransitionKind, check_pss
+from masugate.pss.model import ScopeValue
 from masugate_openclaw_reference.audit_validation import (
     AuditValidationError,
     SpendAuditExpectation,
@@ -1084,6 +1085,18 @@ def _envelope(
     }
 
 
+def _scope_value(value: object, label: str) -> ScopeValue:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        if type(value) is float and not math.isfinite(value):
+            raise DemoRunnerError(f"{label} must be finite")
+        return value
+    raise DemoRunnerError(f"{label} must be a JSON scalar")
+
+
+def _optional_string(value: object, label: str) -> str | None:
+    return None if value is None else _string(value, label)
+
+
 def _scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
     accesses: list[ScopeAccess] = []
     for index, raw in enumerate(_list(value, label)):
@@ -1092,7 +1105,13 @@ def _scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
         version = _integer(access.get("version"), f"{label}[{index}].version")
         if version < 0:
             raise DemoRunnerError(f"{label}[{index}] has a negative version")
-        accesses.append(ScopeAccess(scope=scope, version=version))
+        accesses.append(
+            ScopeAccess(
+                scope=scope,
+                version=version,
+                value=_scope_value(access.get("value"), f"{label}[{index}].value"),
+            )
+        )
     return tuple(accesses)
 
 
@@ -1120,6 +1139,9 @@ def _validate_history(history: object, label: str, *, kind: str) -> History:
         committed = operation.get("committed")
         if type(committed) is not bool:
             raise DemoRunnerError(f"{label}[{index}].committed must be boolean")
+        decision = _optional_string(operation.get("decision"), f"{label}[{index}].decision")
+        if decision not in {None, "allow", "deny"}:
+            raise DemoRunnerError(f"{label}[{index}].decision must be allow or deny")
         policy_reads = _scope_accesses(
             operation.get("policy_reads"), f"{label}[{index}].policy_reads"
         )
@@ -1169,6 +1191,22 @@ def _validate_history(history: object, label: str, *, kind: str) -> History:
                 policy_reads=policy_reads,
                 effect_reads=effect_reads,
                 effect_writes=effect_writes,
+                decision=cast(Literal["allow", "deny"] | None, decision),
+                policy_id=_optional_string(
+                    operation.get("policy_id"), f"{label}[{index}].policy_id"
+                ),
+                policy_version=_optional_string(
+                    operation.get("policy_version"), f"{label}[{index}].policy_version"
+                ),
+                evaluation_time=_optional_string(
+                    operation.get("evaluation_time"), f"{label}[{index}].evaluation_time"
+                ),
+                evaluation_input_digest=_optional_string(
+                    operation.get("evaluation_input_digest"),
+                    f"{label}[{index}].evaluation_input_digest",
+                ),
+                causal_operation_id=causal_operation_id,
+                transition_kind=cast(TransitionKind, event_kind),
             )
         )
     expected_kinds = (
@@ -1847,7 +1885,7 @@ def _validate_demo_evidence(
         if governed.get("budget_valid") is not True:
             raise DemoRunnerError(f"{scenario} governed budget evidence is invalid")
         pss = _mapping(governed.get("pss"), f"{scenario}.governed.pss")
-        if pss.get("valid") is not True:
+        if pss.get("valid") is not True or pss.get("decision_semantics_checked") is not True:
             raise DemoRunnerError(f"{scenario} governed PSS evidence is invalid")
         statuses = [
             _string(status, "terminal status")
@@ -1867,7 +1905,11 @@ def _validate_demo_evidence(
         governed_verdict = check_pss(history)
         if not governed_verdict.pss:
             raise DemoRunnerError(f"{scenario} governed history does not replay as PSS")
-        if pss != {"valid": governed_verdict.pss, "reason": governed_verdict.reason}:
+        if pss != {
+            "valid": governed_verdict.pss,
+            "reason": governed_verdict.reason,
+            "decision_semantics_checked": True,
+        }:
             raise DemoRunnerError(f"{scenario} governed PSS report does not match its history")
         reservation = _mapping(raw_history[0], f"{scenario}.governed.reservation")
         denial = _mapping(raw_history[1], f"{scenario}.governed.denial")
@@ -1997,7 +2039,10 @@ def _validate_demo_evidence(
         ):
             raise DemoRunnerError("weak executable baseline totals are invalid")
         weak_pss = _mapping(weak.get("pss"), "procurement.weak_baseline.pss")
-        if weak_pss.get("valid") is not False:
+        if (
+            weak_pss.get("valid") is not False
+            or weak_pss.get("decision_semantics_checked") is not True
+        ):
             raise DemoRunnerError("weak baseline unexpectedly passed PSS")
         weak_history = _validate_history(
             weak.get("history"), "procurement.weak_baseline.history", kind="weak"
@@ -2005,7 +2050,11 @@ def _validate_demo_evidence(
         weak_verdict = check_pss(weak_history)
         if weak_verdict.pss:
             raise DemoRunnerError("weak baseline history replays as PSS")
-        if weak_pss != {"valid": weak_verdict.pss, "reason": weak_verdict.reason}:
+        if weak_pss != {
+            "valid": weak_verdict.pss,
+            "reason": weak_verdict.reason,
+            "decision_semantics_checked": True,
+        }:
             raise DemoRunnerError("weak baseline PSS report does not match its history")
         ledger_rows = _list(weak.get("effect_ledger"), "weak effect ledger")
         if len(ledger_rows) != 2:
@@ -2030,12 +2079,17 @@ def _validate_demo_evidence(
         for operation in weak_history.operations:
             if (
                 len(operation.policy_reads) != 1
-                or operation.policy_reads[0] != ScopeAccess(scope="spend:team:research", version=0)
+                or operation.policy_reads[0]
+                != ScopeAccess(scope="spend:team:research", version=0, value=10_000)
                 or len(operation.effect_writes) != 1
                 or operation.effect_writes[0]
                 != ScopeAccess(
                     scope="spend:team:research",
                     version=cast(int, ledger[operation.op_id]["budget_version"]),
+                    value=(
+                        10_000
+                        - 6_000 * cast(int, ledger[operation.op_id]["budget_version"])
+                    ),
                 )
             ):
                 raise DemoRunnerError("weak effect ledger does not match its captured history")
