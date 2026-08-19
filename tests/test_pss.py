@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from random import Random
+
 from pytest import MonkeyPatch
 
 import masugate.pss.checker as checker
 from masugate.pss import (
     DependencyKind,
     Operation,
+    PSSDependency,
     ScopeAccess,
     budget_history_from_events,
     check_pss,
@@ -85,7 +89,7 @@ def test_one_operation_with_conflicting_scope_versions_is_not_pss() -> None:
     )
     verdict = check_pss(History((op,)))
     assert not verdict.pss
-    assert "reads multiple versions" in verdict.reason
+    assert "mentions multiple versions" in verdict.reason
 
 
 def test_denied_op_may_read_stale_version() -> None:
@@ -328,8 +332,131 @@ def test_provider_decision_validator_checks_all_terminal_decisions() -> None:
     verdict = check_pss(History((denied,)), decision_validator=validator)
     assert not verdict.pss
     assert verdict.decision_semantics_checked
+    assert verdict.decision_validator_supplied
     assert "decision replay rejected denied" in verdict.reason
     assert not check_pss_exhaustively(History((denied,)), decision_validator=validator).pss
+
+
+def test_decision_validator_searches_all_serial_witnesses() -> None:
+    """Operation names cannot choose a different existential PSS verdict."""
+
+    def spend(op_id: str) -> Operation:
+        return Operation(
+            op_id,
+            0,
+            10,
+            True,
+            decision="allow",
+            policy_reads=(ScopeAccess("budget", 0, 100),),
+            effect_writes=(ScopeAccess("budget", 1, 40),),
+        )
+
+    def denial(op_id: str) -> Operation:
+        return Operation(op_id, 0, 10, False, decision="deny")
+
+    def balance_policy(operation: Operation, state: Mapping[str, ScopeAccess]) -> str | None:
+        expected = "allow" if state["budget"].value >= 60 else "deny"
+        if operation.declared_decision != expected:
+            return f"recorded {operation.declared_decision} conflicts with the balance"
+        return None
+
+    baseline = (ScopeAccess("budget", 0, 100),)
+    for spend_id, denial_id in (("a-spend", "b-review"), ("z-spend", "a-review")):
+        history = History((spend(spend_id), denial(denial_id)), initial_versions=baseline)
+        verdict = check_pss(history, decision_validator=balance_policy)
+        oracle = check_pss_exhaustively(history, decision_validator=balance_policy)
+
+        assert verdict.pss, verdict.reason
+        assert verdict.serial_order == (spend_id, denial_id)
+        assert verdict.decision_semantics_checked
+        assert verdict.decision_validator_supplied
+        assert oracle.pss
+
+
+def test_semantic_witness_search_reports_budget_exhaustion_as_inconclusive() -> None:
+    history = History(
+        (
+            Operation(
+                "z-spend",
+                0,
+                10,
+                True,
+                decision="allow",
+                policy_reads=(ScopeAccess("budget", 0, 100),),
+                effect_writes=(ScopeAccess("budget", 1, 40),),
+            ),
+            Operation("a-review", 0, 10, False, decision="deny"),
+        ),
+        initial_versions=(ScopeAccess("budget", 0, 100),),
+    )
+
+    def balance_policy(operation: Operation, state: Mapping[str, ScopeAccess]) -> str | None:
+        expected = "allow" if state["budget"].value >= 60 else "deny"
+        return None if operation.declared_decision == expected else "unexpected decision"
+
+    verdict = check_pss(
+        history,
+        decision_validator=balance_policy,
+        max_witness_search_steps=1,
+    )
+
+    assert not verdict.pss
+    assert verdict.inconclusive
+    assert verdict.decision_validator_supplied
+    assert verdict.decision_semantics_checked
+
+
+def test_structural_cycle_does_not_claim_unperformed_semantic_replay() -> None:
+    invoked: list[str] = []
+
+    def validator(operation: Operation, _state: Mapping[str, ScopeAccess]) -> str | None:
+        invoked.append(operation.op_id)
+        return None
+
+    weak = History(
+        (
+            Operation(
+                "weak-alpha",
+                0,
+                10,
+                True,
+                decision="allow",
+                policy_reads=(ScopeAccess("budget", 0, 100),),
+                effect_writes=(ScopeAccess("budget", 1, 40),),
+            ),
+            Operation(
+                "weak-beta",
+                1,
+                11,
+                True,
+                decision="allow",
+                policy_reads=(ScopeAccess("budget", 0, 100),),
+                effect_writes=(ScopeAccess("budget", 2, -20),),
+            ),
+        ),
+        initial_versions=(ScopeAccess("budget", 0, 100),),
+    )
+
+    verdict = check_pss(weak, decision_validator=validator)
+
+    assert not verdict.pss
+    assert verdict.decision_validator_supplied
+    assert not verdict.decision_semantics_checked
+    assert invoked == []
+
+
+def test_cycle_reconstruction_handles_converging_discovery_paths() -> None:
+    graph = checker._Graph(("a", "b", "c", "d"))
+    for source, target in (("a", "b"), ("a", "c"), ("b", "d"), ("c", "d"), ("d", "b")):
+        graph.add(PSSDependency(source, target, DependencyKind.WR))
+
+    cycle = graph.find_cycle()
+
+    assert cycle
+    assert all(
+        target in graph._adj[source]
+        for source, target in zip(cycle, (*cycle[1:], cycle[0]), strict=True)
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -337,122 +464,267 @@ def test_provider_decision_validator_checks_all_terminal_decisions() -> None:
 # --------------------------------------------------------------------------- #
 
 
-def _generated_bounded_history(seed: int) -> History:
-    """Build one of several bounded histories from a deterministic seed.
+def _generated_decision_validator(
+    operation: Operation,
+    state: Mapping[str, ScopeAccess],
+) -> str | None:
+    """A deterministic policy used only to exercise semantic witness search."""
 
-    The families deliberately cover serial chains, stale reads, write skew,
-    shared unchanged policy reads, version gaps, mutual dependencies, and
-    varied raw histories.  Keeping every case to at most four operations makes
-    comparison with the independent exhaustive oracle practical in CI.
+    if operation.declared_decision != ("allow" if operation.committed else "deny"):
+        return "decision does not match the transition outcome"
+    if operation.op_id.startswith("semantic-denial"):
+        available = state["budget"].value
+        if available >= 60:
+            return "denial occurred before the budget was spent"
+    return None
+
+
+def _generated_bounded_history(seed: int) -> History:
+    """Build a varied bounded history from a deterministic seed.
+
+    Every generated case has an explicit baseline and decision metadata. The
+    families additionally exercise stale reads, RW write skew, shared reads,
+    version gaps, effect reads, real-time order, and validators whose result
+    selects one of several otherwise valid serial witnesses.
     """
 
-    state = seed + 1
+    random = Random(seed)
+    family = seed % 9
+    token = random.randrange(1_000_000)
+    primary = f"scope-{token}"
+    initial_value = random.randrange(100, 10_000)
+    operations: tuple[Operation, ...]
+    baselines: tuple[ScopeAccess, ...]
 
-    def draw(bound: int) -> int:
-        nonlocal state
-        state = (state * 1_103_515_245 + 12_345) & 0x7FFF_FFFF
-        return state % bound
-
-    family = seed % 7
-    count = 1 + draw(4)
     if family == 0:
-        operations = tuple(
-            _op(
-                f"serial-{seed}-{index}",
-                index * 20,
-                index * 20 + 10,
-                committed=True,
-                reads=[("serial", index)],
-                writes=[("serial", index + 1)],
+        count = 1 + random.randrange(4)
+        current_value = initial_value
+        serial: list[Operation] = []
+        for index in range(count):
+            next_value = current_value - random.randrange(1, min(50, current_value) + 1)
+            serial.append(
+                Operation(
+                    f"serial-{token}-{index}",
+                    index * 20,
+                    index * 20 + 10,
+                    True,
+                    policy_reads=(ScopeAccess(primary, index, current_value),),
+                    effect_writes=(ScopeAccess(primary, index + 1, next_value),),
+                    decision="allow",
+                )
             )
-            for index in range(count)
-        )
+            current_value = next_value
+        operations = tuple(serial)
+        baselines = (ScopeAccess(primary, 0, initial_value),)
     elif family == 1:
+        count = 2 + random.randrange(3)
         operations = tuple(
-            _op(
-                f"stale-{seed}-{index}",
+            Operation(
+                f"stale-{token}-{index}",
                 index,
                 10 + index,
-                committed=True,
-                reads=[("stale", 0)],
-                writes=[("stale", index + 1)],
-            )
-            for index in range(max(2, count))
-        )
-    elif family == 2:
-        operations = (
-            _op("skew-x-" + str(seed), 0, 10, committed=True, reads=[("x", 0)], writes=[("y", 1)]),
-            _op("skew-y-" + str(seed), 0, 10, committed=True, reads=[("y", 0)], writes=[("x", 1)]),
-        )
-    elif family == 3:
-        operations = tuple(
-            _op(
-                f"shared-{seed}-{index}",
-                0,
-                10,
-                committed=True,
-                reads=[("risk", 0)],
-                writes=[(f"effect-{index}", 1)],
-            )
-            for index in range(max(2, count))
-        )
-    elif family == 4:
-        operations = (
-            _op(
-                f"gap-{seed}",
-                0,
-                10,
-                committed=True,
-                reads=[("gap", 0)],
-                writes=[("gap", 2)],
-            ),
-        )
-    elif family == 5:
-        operations = (
-            _op(
-                f"mutual-x-{seed}",
-                0,
-                10,
-                committed=True,
-                reads=[("y", 1)],
-                writes=[("x", 1)],
-            ),
-            _op(
-                f"mutual-y-{seed}",
-                0,
-                10,
-                committed=True,
-                reads=[("x", 1)],
-                writes=[("y", 1)],
-            ),
-        )
-    else:
-        operations = tuple(
-            _op(
-                f"raw-{seed}-{index}",
-                draw(5),
-                6 + draw(5),
-                committed=bool(draw(2)),
-                reads=[(f"raw-{draw(3)}", draw(4))] if draw(2) else [],
-                writes=[(f"raw-{draw(3)}", 1 + draw(3))] if draw(2) else [],
+                True,
+                policy_reads=(ScopeAccess(primary, 0, initial_value),),
+                effect_writes=(ScopeAccess(primary, index + 1, initial_value - index - 1),),
+                decision="allow",
             )
             for index in range(count)
         )
-    return History(operations)
+        baselines = (ScopeAccess(primary, 0, initial_value),)
+    elif family == 2:
+        x, y = f"x-{token}", f"y-{token}"
+        operations = (
+            Operation(
+                f"skew-x-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(x, 0, initial_value),),
+                effect_writes=(ScopeAccess(y, 1, initial_value - 1),),
+                decision="allow",
+            ),
+            Operation(
+                f"skew-y-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(y, 0, initial_value),),
+                effect_writes=(ScopeAccess(x, 1, initial_value - 1),),
+                decision="allow",
+            ),
+        )
+        baselines = (ScopeAccess(x, 0, initial_value), ScopeAccess(y, 0, initial_value))
+    elif family == 3:
+        risk = f"risk-{token}"
+        count = 2 + random.randrange(3)
+        operations = tuple(
+            Operation(
+                f"shared-{token}-{index}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(risk, 0, initial_value),),
+                effect_writes=(ScopeAccess(f"effect-{token}-{index}", 1, index),),
+                decision="allow",
+            )
+            for index in range(count)
+        )
+        baselines = (ScopeAccess(risk, 0, initial_value),)
+    elif family == 4:
+        operations = (
+            Operation(
+                f"gap-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(primary, 0, initial_value),),
+                effect_writes=(ScopeAccess(primary, 2, initial_value - 1),),
+                decision="allow",
+            ),
+        )
+        baselines = (ScopeAccess(primary, 0, initial_value),)
+    elif family == 5:
+        x, y = f"x-{token}", f"y-{token}"
+        operations = (
+            Operation(
+                f"mutual-x-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(y, 1, initial_value - 1),),
+                effect_writes=(ScopeAccess(x, 1, initial_value - 1),),
+                decision="allow",
+            ),
+            Operation(
+                f"mutual-y-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(x, 1, initial_value - 1),),
+                effect_writes=(ScopeAccess(y, 1, initial_value - 1),),
+                decision="allow",
+            ),
+        )
+        baselines = (ScopeAccess(x, 0, initial_value), ScopeAccess(y, 0, initial_value))
+    elif family == 6:
+        operations = (
+            Operation(
+                f"reservation-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess(primary, 0, initial_value),),
+                effect_writes=(ScopeAccess(primary, 1, initial_value - 1),),
+                decision="allow",
+                causal_operation_id=f"purchase-{token}",
+                transition_kind="coordination-reservation",
+            ),
+            Operation(
+                f"settlement-{token}",
+                20,
+                30,
+                True,
+                effect_reads=(ScopeAccess(primary, 1, initial_value - 1),),
+                effect_writes=(ScopeAccess(primary, 2, initial_value - 1),),
+                decision="allow",
+                causal_operation_id=f"purchase-{token}",
+                transition_kind="terminal-settlement",
+            ),
+        )
+        baselines = (ScopeAccess(primary, 0, initial_value),)
+    elif family == 7:
+        operations = (
+            Operation(
+                f"semantic-spend-{token}",
+                0,
+                10,
+                True,
+                policy_reads=(ScopeAccess("budget", 0, 100),),
+                effect_writes=(ScopeAccess("budget", 1, 40),),
+                decision="allow",
+            ),
+            Operation(
+                f"semantic-denial-{token}",
+                0,
+                10,
+                False,
+                decision="deny",
+            ),
+        )
+        baselines = (ScopeAccess("budget", 0, 100),)
+    else:
+        count = 1 + random.randrange(4)
+        operations = tuple(
+            Operation(
+                f"denial-{token}-{index}",
+                random.randrange(5),
+                10 + random.randrange(5),
+                False,
+                policy_reads=(ScopeAccess(primary, 0, initial_value),),
+                decision="deny",
+            )
+            for index in range(count)
+        )
+        baselines = (ScopeAccess(primary, 0, initial_value),)
+    return History(operations, initial_versions=baselines)
+
+
+def _history_signature(history: History) -> tuple[object, ...]:
+    return (
+        tuple((access.scope, access.version, access.value) for access in history.initial_versions),
+        tuple(
+            (
+                operation.begin_ns,
+                operation.commit_ns,
+                operation.committed,
+                operation.declared_decision,
+            tuple(
+                (access.scope, access.version, access.value)
+                for access in operation.policy_reads
+            ),
+            tuple(
+                (access.scope, access.version, access.value)
+                for access in operation.effect_reads
+            ),
+            tuple(
+                (access.scope, access.version, access.value)
+                for access in operation.effect_writes
+            ),
+            )
+            for operation in history.operations
+        ),
+    )
 
 
 def test_optimized_checker_matches_exhaustive_oracle_on_30k_generated_histories() -> None:
     accepted = 0
     rejected = 0
-    for seed in range(30_000):
-        history = _generated_bounded_history(seed)
-        optimized = check_pss(history)
-        exhaustive = check_pss_exhaustively(history)
-        assert optimized.pss == exhaustive.pss, f"oracle disagreement for generated seed {seed}"
-        if optimized.pss:
-            accepted += 1
-        else:
-            rejected += 1
+    histories = tuple(_generated_bounded_history(seed) for seed in range(30_000))
+    for seed, history in enumerate(histories):
+        for real_time in (False, True):
+            optimized = check_pss(
+                history,
+                real_time=real_time,
+                decision_validator=_generated_decision_validator,
+            )
+            exhaustive = check_pss_exhaustively(
+                history,
+                real_time=real_time,
+                decision_validator=_generated_decision_validator,
+            )
+            assert optimized.pss == exhaustive.pss, (
+                f"oracle disagreement for generated seed {seed}, real_time={real_time}"
+            )
+            if optimized.pss:
+                accepted += 1
+            else:
+                rejected += 1
+    assert len({_history_signature(history) for history in histories}) > 25_000
+    assert all(history.initial_versions for history in histories)
+    assert any(operation.effect_reads for history in histories for operation in history.operations)
+    assert all(
+        operation.decision is not None for history in histories for operation in history.operations
+    )
     assert accepted > 0
     assert rejected > 0
 
@@ -475,7 +747,11 @@ def test_write_skew_regression_kills_legacy_graph_only_mutant(monkeypatch: Monke
             original_add(graph, dependency)
 
     monkeypatch.setattr(checker._Graph, "add", add_without_rw)
-    monkeypatch.setattr(checker, "_replay_witness", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        checker,
+        "_replay_witness",
+        lambda *_args, **_kwargs: checker._ReplayResult(None),
+    )
 
     assert checker.check_pss(history).pss
 

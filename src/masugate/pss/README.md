@@ -33,6 +33,9 @@ capacity seen by a concurrent policy evaluation, the reservation write is one
 PSS node and later settlement, cancellation, or release is another node with
 the same causal action identity. Omitting a pending reservation would make a
 subsequent capacity denial impossible to explain from the terminal history.
+The generic checker serializes those declared state transitions; a provider or
+release-evidence verifier remains responsible for enforcing its own lifecycle
+pairing and causal-identity rules.
 
 ## Dependency graph
 
@@ -57,21 +60,31 @@ incorrect.
 
 ## Decision legality and trusted replay
 
-An acyclic dependency graph yields a candidate serial order. The checker then
-replays all recorded reads and writes in that order: every read must see the
-current version and every write must advance its scope by exactly one. A
-recorded denial participates in this replay exactly like an allow, except that
-it writes no policy state. Thus a stale denial cannot be accepted merely
-because it had no effect.
+An acyclic dependency graph yields a witness space. Without a decision
+validator, the checker deterministically replays one topological order: every
+read must see the current version and every write must advance its scope by
+exactly one. A recorded denial participates in this replay exactly like an
+allow, except that it writes no policy state. Thus a stale denial cannot be
+accepted merely because it had no effect.
 
 Versions prove that the recorded policy evaluation observed the correct
 *declared state*. They cannot by themselves evaluate an arbitrary policy
 program. Providers that want the checker to verify predicate outcomes pass a
 `DecisionValidator` to `check_pss`. The validator receives the operation and
-witness-prefix state and may replay the retained policy bundle and inputs. The
-verdict records whether such semantic replay occurred. Without a validator, a
-successful verdict is structural PSS under the explicit trusted assumption that
-retained policy decisions and reads are faithful.
+witness-prefix state and may replay the retained policy bundle and inputs. To
+preserve PSS's existential definition, the checker searches ready transitions
+when a validator is supplied; it accepts the first serial witness whose policy
+decisions replay. The search is deterministic and bounded by
+`max_witness_search_steps` (100,000 operation attempts by default). Exhausting
+that budget returns a fail-closed, explicitly `inconclusive` verdict rather
+than claiming that no witness exists.
+
+`decision_validator_supplied` records configuration, while
+`decision_semantics_checked` is true only if the callback actually ran. This
+keeps a structural cycle or malformed-history rejection from being mislabeled
+as policy replay. Without a validator, a successful verdict is structural PSS
+under the explicit trusted assumption that retained policy decisions and reads
+are faithful.
 
 Certified evaluation time and policy identity/version belong to this replay
 boundary. A rolling window or an activated policy version must be provided to
@@ -89,21 +102,22 @@ history. Under these assumptions:
    particular, a reader of `v` must precede any writer of a later version;
    otherwise the reader would observe that later version.
 2. A graph cycle therefore rules out a serial explanation.
-3. If the graph is acyclic, a topological order respects every required
-   dependency. The checker replays it and requires each read to equal the
-   current version and each write to be the next version. A successful replay
-   is a serial witness for the declared access history.
-4. If a provider decision validator accepts every transition at its witness
-   prefix, the witness also establishes the policy-predicate clauses of PSS,
-   including denials.
+3. If the graph is acyclic, each topological order respects every required
+   dependency. Structural replay requires every read to equal the current
+   version and each write to be the next version.
+4. With a provider decision validator, the checker searches those orders until
+   one accepts every transition at its witness prefix. That witness also
+   establishes the policy-predicate clauses of PSS, including denials.
 
 The bounded oracle in `oracle.py` independently enumerates serial orders and
 replays them. The test gate compares it with the optimized graph checker on
-30,000 deterministic generated histories of at most four operations, covering
-serial chains, stale reads, write skew, shared unchanged reads, version gaps,
-mutual dependencies, and varied raw histories. Mutation regressions also show
-that the pre-v0.1.1 graph-only checker accepts write skew and that the former
-global duplicate-read heuristic rejects a legal shared read. The oracle is
+30,000 deterministic generated histories of at most four operations, under
+both real-time modes and with explicit baselines, decisions, effect reads, and
+provider validators. It covers serial chains, stale reads, write skew, shared
+unchanged reads, version gaps, mutual dependencies, reservations, and
+validator-selected witness order. Mutation regressions also show that the
+pre-v0.1.1 graph-only checker accepts write skew and that the former global
+duplicate-read heuristic rejects a legal shared read. The oracle is
 intentionally not a production path.
 
 ## Limits and assumptions
@@ -112,6 +126,8 @@ intentionally not a production path.
   undeclared state, direct provider bypasses, or an arbitrary host topology.
 - A policy predicate is semantically verified only when its provider supplies
   a validator and retained evidence sufficient to replay it.
+- A validator-backed history that exceeds the configured semantic-search budget
+  is inconclusive and must not support a positive PSS claim.
 - PSS is a safety property. It does not imply liveness, fairness, bounded
   waiting, task correctness, or unconditional exactly-once external effects.
 - A connector's external-effect guarantees remain conditional on its stated

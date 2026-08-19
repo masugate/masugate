@@ -401,7 +401,8 @@ def _concurrency_addon() -> dict[str, object]:
         "pss": {
             "valid": governed_verdict.pss,
             "reason": governed_verdict.reason,
-            "decision_semantics_checked": True,
+            "decision_validator_supplied": governed_verdict.decision_validator_supplied,
+            "decision_semantics_checked": governed_verdict.decision_semantics_checked,
         },
         "initial_policy_state": initial_policy_state,
         "history": governed_history,
@@ -458,7 +459,8 @@ def _concurrency_addon() -> dict[str, object]:
         "pss": {
             "valid": weak_verdict.pss,
             "reason": weak_verdict.reason,
-            "decision_semantics_checked": True,
+            "decision_validator_supplied": weak_verdict.decision_validator_supplied,
+            "decision_semantics_checked": weak_verdict.decision_semantics_checked,
         },
         "initial_policy_state": initial_policy_state,
         "history": weak_history,

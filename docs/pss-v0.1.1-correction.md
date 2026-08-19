@@ -17,9 +17,12 @@ neither sound nor complete for the PSS definition.
 | A completed write precedes a denial that retained an old read | may be accepted | rejected | PSS requires the denial itself to match the policy state at its serial position. |
 
 The corrected checker constructs WR, WW, RW, and real-time dependencies,
-returns their provenance, and replays its serial witness. It also rejects
-malformed version chains rather than silently overwriting duplicate writers or
-accepting missing versions.
+returns their provenance, and replays its serial witness. When a provider
+validator is supplied, it searches valid topological witnesses rather than
+letting transition names choose one order. The bounded search is explicitly
+inconclusive on budget exhaustion. The checker also rejects malformed version
+chains rather than silently overwriting duplicate writers or accepting missing
+versions.
 
 ## Definition carried forward
 
@@ -38,9 +41,9 @@ The definition requires two distinct checks:
    position.
 
 The generic checker implements the first and accepts a provider decision
-validator for the second. It reports whether semantic replay was supplied;
-callers must not describe an unchecked structural verdict as arbitrary-policy
-replay.
+validator for the second. Its verdict distinguishes a supplied validator from
+semantic replay that actually ran; callers must not describe a structural
+short-circuit as arbitrary-policy replay.
 
 ## Multi-phase actions
 
@@ -48,8 +51,10 @@ Pending actions are not terminal decisions, but their coordination writes can
 be visible. A capacity reservation therefore appears as a committed
 `coordination-reservation` transition, followed by a `terminal-settlement`,
 cancellation, or release transition. Both retain the same causal action
-identity. This fixes the prior ambiguity in which a concurrent denial could
-observe a reservation that was absent from the history being serialized.
+identity. The generic checker serializes those visible state transitions; the
+reference evidence verifier enforces its causal pairing and lifecycle shape.
+Together, that prevents a concurrent denial from observing a reservation that
+is absent from the retained history.
 
 ## Evidence and compatibility
 
@@ -68,18 +73,21 @@ The reference procurement workload now retains policy-read values, an explicit
 initial policy-state baseline, and runs its fixed spend predicate through a
 provider validator. Its independent demo and release-evidence verifiers rebuild
 that complete history, invoke the same validator, and compare the resulting
-semantic PSS verdict rather than trusting a producer-supplied flag. Other
-providers receive only a structural PSS verdict until they pass a validator.
-Existing v0.1.0 experimental PSS labels should be treated as workload-specific
+semantic PSS verdict rather than trusting a producer-supplied flag. Its
+evidence records validator supply separately from actual semantic replay, so a
+structural cycle is not mislabeled as policy validation. Other providers
+receive only a structural PSS verdict until they pass a validator. Existing
+v0.1.0 experimental PSS labels should be treated as workload-specific
 invariant observations until rerun with corrected histories, the corrected
 checker, and provider decision replay.
 
 ## Required gates before publication
 
 1. The optimized checker and bounded exhaustive oracle agree on the corrected
-   counterexamples and 30,000 deterministic generated bounded histories; the
-   regression suite also kills the historical graph-only and duplicate-read
-   checker mutants.
+   counterexamples and 30,000 deterministic generated bounded histories under
+   both real-time modes, with baselines, effect reads, and provider decision
+   validators; the regression suite also kills the historical graph-only and
+   duplicate-read checker mutants.
 2. Reference procurement evidence records visible reservation and settlement
    transitions with causal linkage.
 3. Provider policy replay validates both allows and denials for claim-bearing

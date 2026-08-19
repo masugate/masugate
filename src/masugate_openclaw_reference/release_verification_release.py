@@ -611,10 +611,12 @@ async def run_concurrency_addon() -> dict[str, object]:
     if (
         governed.get("budget_valid") is not True
         or governed_pss.get("valid") is not True
+        or governed_pss.get("decision_validator_supplied") is not True
         or governed_pss.get("decision_semantics_checked") is not True
         or weak.get("stale_authorization") is not True
         or weak_pss.get("valid") is not False
-        or weak_pss.get("decision_semantics_checked") is not True
+        or weak_pss.get("decision_validator_supplied") is not True
+        or weak_pss.get("decision_semantics_checked") is not False
     ):
         raise ReleaseVerificationReleaseError(
             "concurrent E4 add-on did not preserve its expected asymmetry"
@@ -1583,7 +1585,8 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         != {
             "valid": governed_verdict.pss,
             "reason": governed_verdict.reason,
-            "decision_semantics_checked": True,
+            "decision_validator_supplied": governed_verdict.decision_validator_supplied,
+            "decision_semantics_checked": governed_verdict.decision_semantics_checked,
         }
         or not governed_verdict.pss
     ):
@@ -1652,7 +1655,8 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         != {
             "valid": weak_verdict.pss,
             "reason": weak_verdict.reason,
-            "decision_semantics_checked": True,
+            "decision_validator_supplied": weak_verdict.decision_validator_supplied,
+            "decision_semantics_checked": weak_verdict.decision_semantics_checked,
         }
     ):
         raise ReleaseVerificationReleaseError(

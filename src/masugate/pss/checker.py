@@ -14,7 +14,10 @@ RW anti-dependencies are essential.  Omitting them accepts write skew; using a
 "no duplicate reads" shortcut rejects legal shared read-only state.  After a
 topological sort, the checker replays every declared read and write against the
 witness.  A provider may additionally supply a decision validator to replay
-its policy predicate from retained policy evidence.
+its policy predicate from retained policy evidence.  Because that validator can
+make one valid graph order fail and another pass, the checker searches
+deterministic topological witnesses when a validator is supplied, bounded by a
+fail-closed search budget.
 """
 
 from __future__ import annotations
@@ -57,7 +60,14 @@ class PSSVerdict:
     reason: str
     serial_order: tuple[str, ...] = ()
     dependencies: tuple[PSSDependency, ...] = ()
+    # True only when the validator was actually invoked while producing this
+    # verdict.  This distinguishes a structural short-circuit from policy
+    # replay, even when a caller supplied a validator.
     decision_semantics_checked: bool = False
+    decision_validator_supplied: bool = False
+    # Search-budget exhaustion is fail-closed but is not proof that no PSS
+    # witness exists.
+    inconclusive: bool = False
 
     def __bool__(self) -> bool:
         return self.pss
@@ -101,31 +111,33 @@ class _Graph:
         parent: dict[str, str | None] = dict.fromkeys(self._nodes, None)
 
         def walk(start: str) -> tuple[str, ...]:
-            stack: list[tuple[str, bool]] = [(start, False)]
+            color[start] = gray
+            stack: list[tuple[str, tuple[str, ...], int]] = [
+                (start, tuple(sorted(self._adj[start])), 0)
+            ]
             while stack:
-                node, leaving = stack.pop()
-                if leaving:
+                node, neighbors, index = stack[-1]
+                if index == len(neighbors):
                     color[node] = black
+                    stack.pop()
                     continue
-                if color[node] != white:
-                    continue
-                color[node] = gray
-                stack.append((node, True))
-                for neighbor in reversed(sorted(self._adj[node])):
-                    if color[neighbor] == white:
-                        parent[neighbor] = node
-                        stack.append((neighbor, False))
-                    elif color[neighbor] == gray:
-                        path = [node]
-                        cursor = node
-                        while cursor != neighbor:
-                            predecessor = parent[cursor]
-                            if predecessor is None:
-                                return ()
-                            cursor = predecessor
-                            path.append(cursor)
-                        path.reverse()
-                        return tuple(path)
+                neighbor = neighbors[index]
+                stack[-1] = (node, neighbors, index + 1)
+                if color[neighbor] == white:
+                    parent[neighbor] = node
+                    color[neighbor] = gray
+                    stack.append((neighbor, tuple(sorted(self._adj[neighbor])), 0))
+                elif color[neighbor] == gray:
+                    path = [node]
+                    cursor = node
+                    while cursor != neighbor:
+                        predecessor = parent[cursor]
+                        if predecessor is None:
+                            return ()
+                        cursor = predecessor
+                        path.append(cursor)
+                    path.reverse()
+                    return tuple(path)
             return ()
 
         for node in self._nodes:
@@ -153,8 +165,8 @@ class _Graph:
         return tuple(order)
 
 
-def _invalid(reason: str, *, checked: bool = False) -> PSSVerdict:
-    return PSSVerdict(False, (), reason, decision_semantics_checked=checked)
+def _invalid(reason: str, *, validator_supplied: bool = False) -> PSSVerdict:
+    return PSSVerdict(False, (), reason, decision_validator_supplied=validator_supplied)
 
 
 def _scope_versions(accesses: tuple[ScopeAccess, ...]) -> tuple[dict[str, ScopeAccess], str | None]:
@@ -167,7 +179,7 @@ def _scope_versions(accesses: tuple[ScopeAccess, ...]) -> tuple[dict[str, ScopeA
         existing = by_scope.get(access.scope)
         if existing is not None and existing.version != access.version:
             return {}, (
-                f"reads multiple versions of {access.scope} "
+                f"mentions multiple versions of {access.scope} "
                 f"({existing.version} and {access.version})"
             )
         by_scope[access.scope] = access
@@ -312,38 +324,155 @@ def _cycle_reason(cycle: tuple[str, ...], dependencies: tuple[PSSDependency, ...
     )
 
 
+@dataclass(frozen=True)
+class _ReplayResult:
+    error: str | None
+    decision_semantics_checked: bool = False
+
+
+def _replay_operation(
+    operation: Operation,
+    state: dict[str, ScopeAccess],
+    *,
+    decision_validator: DecisionValidator | None,
+) -> _ReplayResult:
+    reads, _ = _scope_versions(operation.reads)
+    for scope, read in reads.items():
+        current = state[scope]
+        if current.version != read.version:
+            return _ReplayResult(
+                f"serial witness reads {scope} version {read.version} for {operation.op_id}, "
+                f"but current version is {current.version}"
+            )
+    checked = decision_validator is not None
+    if decision_validator is not None:
+        decision_error = decision_validator(operation, MappingProxyType(dict(state)))
+        if decision_error is not None:
+            return _ReplayResult(
+                f"decision replay rejected {operation.op_id}: {decision_error}",
+                decision_semantics_checked=True,
+            )
+    for write in operation.effect_writes:
+        current = state[write.scope]
+        if write.version != current.version + 1:
+            return _ReplayResult(
+                f"serial witness writes {write.scope} version {write.version} "
+                f"for {operation.op_id}, "
+                f"but current version is {current.version}",
+                decision_semantics_checked=checked,
+            )
+        state[write.scope] = write
+    return _ReplayResult(None, decision_semantics_checked=checked)
+
+
 def _replay_witness(
     validated: _ValidatedHistory,
     order: tuple[str, ...],
     *,
     decision_validator: DecisionValidator | None,
-) -> str | None:
+) -> _ReplayResult:
     state = dict(validated.initial_state)
     by_id = {operation.op_id: operation for operation in validated.operations}
+    checked = False
     for operation_id in order:
         operation = by_id[operation_id]
-        reads, _ = _scope_versions(operation.reads)
-        for scope, read in reads.items():
-            current = state[scope]
-            if current.version != read.version:
-                return (
-                    f"serial witness reads {scope} version {read.version} for {operation_id}, "
-                    f"but current version is {current.version}"
-                )
-        if decision_validator is not None:
-            decision_error = decision_validator(operation, MappingProxyType(dict(state)))
-            if decision_error is not None:
-                return f"decision replay rejected {operation_id}: {decision_error}"
-        for write in operation.effect_writes:
-            current = state[write.scope]
-            if write.version != current.version + 1:
-                return (
-                    f"serial witness writes {write.scope} version {write.version} "
-                    f"for {operation_id}, "
-                    f"but current version is {current.version}"
-                )
-            state[write.scope] = write
-    return None
+        result = _replay_operation(
+            operation,
+            state,
+            decision_validator=decision_validator,
+        )
+        checked = checked or result.decision_semantics_checked
+        if result.error is not None:
+            return _ReplayResult(result.error, decision_semantics_checked=checked)
+    return _ReplayResult(None, decision_semantics_checked=checked)
+
+
+@dataclass(frozen=True)
+class _WitnessSearchResult:
+    serial_order: tuple[str, ...] = ()
+    replay_error: str | None = None
+    decision_semantics_checked: bool = False
+    inconclusive: bool = False
+
+
+def _search_semantic_witness(
+    validated: _ValidatedHistory,
+    graph: _Graph,
+    *,
+    decision_validator: DecisionValidator,
+    max_steps: int,
+) -> _WitnessSearchResult:
+    """Search valid graph orders while replaying policy decisions incrementally.
+
+    A semantic validator may depend on the full declared witness-prefix state,
+    so an acyclic dependency graph alone does not choose its unique witness.
+    Search is deterministic and fail-closed at ``max_steps`` rather than
+    allowing a broad ready set to consume unbounded verifier time.
+    """
+
+    by_id = {operation.op_id: operation for operation in validated.operations}
+    operation_ids = tuple(by_id)
+    indegree = dict.fromkeys(operation_ids, 0)
+    successors: dict[str, tuple[str, ...]] = {}
+    for source, outgoing in graph._adj.items():
+        successors[source] = tuple(sorted(outgoing))
+        for target in outgoing:
+            indegree[target] += 1
+    initial_ready = tuple(
+        sorted(operation_id for operation_id, degree in indegree.items() if degree == 0)
+    )
+    steps = 0
+    checked = False
+    last_error: str | None = None
+    exhausted = False
+
+    def search(
+        order: tuple[str, ...],
+        ready: tuple[str, ...],
+        current_indegree: dict[str, int],
+        state: dict[str, ScopeAccess],
+    ) -> tuple[str, ...] | None:
+        nonlocal steps, checked, exhausted, last_error
+        if len(order) == len(validated.operations):
+            return order
+        for index, operation_id in enumerate(ready):
+            if steps >= max_steps:
+                exhausted = True
+                return None
+            steps += 1
+            next_state = dict(state)
+            replay = _replay_operation(
+                by_id[operation_id],
+                next_state,
+                decision_validator=decision_validator,
+            )
+            checked = checked or replay.decision_semantics_checked
+            if replay.error is not None:
+                last_error = replay.error
+                continue
+            next_indegree = dict(current_indegree)
+            next_ready = list(ready[:index] + ready[index + 1 :])
+            for target in successors[operation_id]:
+                next_indegree[target] -= 1
+                if next_indegree[target] == 0:
+                    next_ready.append(target)
+            witness = search(
+                (*order, operation_id),
+                tuple(sorted(next_ready)),
+                next_indegree,
+                next_state,
+            )
+            if witness is not None or exhausted:
+                return witness
+        return None
+
+    witness = search((), initial_ready, indegree, dict(validated.initial_state))
+    return _WitnessSearchResult(
+        serial_order=witness or (),
+        replay_error=last_error,
+        decision_semantics_checked=checked,
+        inconclusive=exhausted,
+    )
 
 
 def check_pss(
@@ -351,21 +480,29 @@ def check_pss(
     *,
     real_time: bool = True,
     decision_validator: DecisionValidator | None = None,
+    max_witness_search_steps: int = 100_000,
 ) -> PSSVerdict:
     """Verify PSS for a complete declared versioned-access history.
 
     The checker proves existence of a serial witness for the exact reads and
     writes in the history.  Supplying ``decision_validator`` additionally
     checks every terminal decision, including denials, against provider-retained
-    policy evidence at its witness position.  Without one, the verdict is a
-    structural PSS result under the trusted assumption that recorded policy
-    decisions and reads are faithful.
+    policy evidence at its witness position.  The checker searches valid
+    topological orders up to ``max_witness_search_steps``; exhaustion returns
+    a fail-closed, inconclusive verdict.  Without a validator, the verdict is
+    structural PSS under the trusted assumption that recorded policy decisions
+    and reads are faithful.
     """
 
+    if max_witness_search_steps < 1:
+        raise ValueError("max_witness_search_steps must be positive")
     validated = _validate_history(history)
-    checked = decision_validator is not None
+    validator_supplied = decision_validator is not None
     if isinstance(validated, str):
-        return _invalid(f"malformed PSS history: {validated}", checked=checked)
+        return _invalid(
+            f"malformed PSS history: {validated}",
+            validator_supplied=validator_supplied,
+        )
     graph = _build_graph(validated, real_time=real_time)
     dependencies = graph.dependencies
     cycle = graph.find_cycle()
@@ -375,37 +512,75 @@ def check_pss(
             cycle,
             _cycle_reason(cycle, dependencies),
             dependencies=dependencies,
-            decision_semantics_checked=checked,
+            decision_validator_supplied=validator_supplied,
         )
     order = graph.topological_order()
     if len(order) != len(validated.operations):
-        return _invalid("serialization graph did not yield a complete witness", checked=checked)
-    replay_error = _replay_witness(
+        return _invalid(
+            "serialization graph did not yield a complete witness",
+            validator_supplied=validator_supplied,
+        )
+    if decision_validator is None:
+        replay = _replay_witness(
+            validated,
+            order,
+            decision_validator=None,
+        )
+        if replay.error is not None:
+            return PSSVerdict(
+                False,
+                (),
+                replay.error,
+                serial_order=order,
+                dependencies=dependencies,
+            )
+        suffix = "; policy predicates not replayed (trusted recorded-decision evidence)"
+        return PSSVerdict(
+            True,
+            (),
+            f"acyclic WR/WW/RW/real-time dependencies + serial read/write replay{suffix}",
+            serial_order=order,
+            dependencies=dependencies,
+        )
+
+    search = _search_semantic_witness(
         validated,
-        order,
+        graph,
         decision_validator=decision_validator,
+        max_steps=max_witness_search_steps,
     )
-    if replay_error is not None:
+    if search.inconclusive:
         return PSSVerdict(
             False,
             (),
-            replay_error,
-            serial_order=order,
+            f"semantic witness search exhausted {max_witness_search_steps} steps",
             dependencies=dependencies,
-            decision_semantics_checked=checked,
+            decision_semantics_checked=search.decision_semantics_checked,
+            decision_validator_supplied=True,
+            inconclusive=True,
+        )
+    if not search.serial_order:
+        return PSSVerdict(
+            False,
+            (),
+            search.replay_error or "no serial witness satisfies the decision validator",
+            dependencies=dependencies,
+            decision_semantics_checked=search.decision_semantics_checked,
+            decision_validator_supplied=True,
         )
     suffix = (
         "; policy decisions replayed"
-        if checked
-        else "; policy predicates not replayed (trusted recorded-decision evidence)"
+        if search.decision_semantics_checked
+        else "; policy validator supplied but no terminal decision required replay"
     )
     return PSSVerdict(
         True,
         (),
         f"acyclic WR/WW/RW/real-time dependencies + serial read/write replay{suffix}",
-        serial_order=order,
+        serial_order=search.serial_order,
         dependencies=dependencies,
-        decision_semantics_checked=checked,
+        decision_semantics_checked=search.decision_semantics_checked,
+        decision_validator_supplied=True,
     )
 
 

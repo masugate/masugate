@@ -514,6 +514,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                 "pss": {
                     "valid": True,
                     "reason": "fixture",
+                    "decision_validator_supplied": True,
                     "decision_semantics_checked": True,
                 },
                 "initial_policy_state": [
@@ -594,7 +595,8 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
     governed["pss"] = {
         "valid": verdict.pss,
         "reason": verdict.reason,
-        "decision_semantics_checked": True,
+        "decision_validator_supplied": verdict.decision_validator_supplied,
+        "decision_semantics_checked": verdict.decision_semantics_checked,
     }
     return evidence, release
 
@@ -612,7 +614,8 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
     assert report["pss"] == {
         "valid": False,
         "reason": "serialization cycle (RW -> RW) among weak-alpha -> weak-beta -> weak-alpha",
-        "decision_semantics_checked": True,
+        "decision_validator_supplied": True,
+        "decision_semantics_checked": False,
     }
     history = report["history"]
     assert isinstance(history, list)

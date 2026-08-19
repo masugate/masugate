@@ -1895,7 +1895,11 @@ def _validate_demo_evidence(
         if governed.get("budget_valid") is not True:
             raise DemoRunnerError(f"{scenario} governed budget evidence is invalid")
         pss = _mapping(governed.get("pss"), f"{scenario}.governed.pss")
-        if pss.get("valid") is not True or pss.get("decision_semantics_checked") is not True:
+        if (
+            pss.get("valid") is not True
+            or pss.get("decision_validator_supplied") is not True
+            or pss.get("decision_semantics_checked") is not True
+        ):
             raise DemoRunnerError(f"{scenario} governed PSS evidence is invalid")
         statuses = [
             _string(status, "terminal status")
@@ -1922,7 +1926,8 @@ def _validate_demo_evidence(
         if pss != {
             "valid": governed_verdict.pss,
             "reason": governed_verdict.reason,
-            "decision_semantics_checked": True,
+            "decision_validator_supplied": governed_verdict.decision_validator_supplied,
+            "decision_semantics_checked": governed_verdict.decision_semantics_checked,
         }:
             raise DemoRunnerError(f"{scenario} governed PSS report does not match its history")
         reservation = _mapping(raw_history[0], f"{scenario}.governed.reservation")
@@ -2055,7 +2060,8 @@ def _validate_demo_evidence(
         weak_pss = _mapping(weak.get("pss"), "procurement.weak_baseline.pss")
         if (
             weak_pss.get("valid") is not False
-            or weak_pss.get("decision_semantics_checked") is not True
+            or weak_pss.get("decision_validator_supplied") is not True
+            or weak_pss.get("decision_semantics_checked") is not False
         ):
             raise DemoRunnerError("weak baseline unexpectedly passed PSS")
         weak_history = _validate_history(
@@ -2073,7 +2079,8 @@ def _validate_demo_evidence(
         if weak_pss != {
             "valid": weak_verdict.pss,
             "reason": weak_verdict.reason,
-            "decision_semantics_checked": True,
+            "decision_validator_supplied": weak_verdict.decision_validator_supplied,
+            "decision_semantics_checked": weak_verdict.decision_semantics_checked,
         }:
             raise DemoRunnerError("weak baseline PSS report does not match its history")
         ledger_rows = _list(weak.get("effect_ledger"), "weak effect ledger")

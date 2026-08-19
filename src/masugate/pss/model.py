@@ -56,9 +56,10 @@ class Operation:
     retained policy evaluation.
 
     A reservation that can affect another operation's policy-visible state is
-    its own transition.  Its later settlement is another transition with the
-    same ``causal_operation_id``.  This prevents a pending action from hiding
-    an observable policy-state write.
+    its own transition. Its later settlement is another transition with the
+    same ``causal_operation_id``. This makes a pending action visible to PSS;
+    provider or release-evidence verifiers enforce lifecycle pairing because
+    the generic checker only decides declared-state serializability.
     """
 
     op_id: str

@@ -79,11 +79,17 @@ def check_pss_exhaustively(
     """
 
     operations = history.operations
-    checked = decision_validator is not None
+    validator_supplied = decision_validator is not None
+    decision_semantics_checked = False
     if len(operations) > max_operations:
         raise ValueError(f"oracle accepts at most {max_operations} operations")
     if len({operation.op_id for operation in operations}) != len(operations):
-        return PSSVerdict(False, (), "malformed PSS history: duplicate transition identities")
+        return PSSVerdict(
+            False,
+            (),
+            "malformed PSS history: duplicate transition identities",
+            decision_validator_supplied=validator_supplied,
+        )
     try:
         initial = _initial_state(history)
     except ValueError as exc:
@@ -91,7 +97,7 @@ def check_pss_exhaustively(
             False,
             (),
             f"malformed PSS history: {exc}",
-            decision_semantics_checked=checked,
+            decision_validator_supplied=validator_supplied,
         )
 
     for order in permutations(operations):
@@ -109,6 +115,7 @@ def check_pss_exhaustively(
                 accepted = False
                 break
             if decision_validator is not None:
+                decision_semantics_checked = True
                 error = decision_validator(operation, MappingProxyType(dict(state)))
                 if error is not None:
                     accepted = False
@@ -121,13 +128,15 @@ def check_pss_exhaustively(
                 (),
                 "exhaustive serial replay found a valid witness",
                 serial_order=tuple(operation.op_id for operation in order),
-                decision_semantics_checked=checked,
+                decision_semantics_checked=decision_semantics_checked,
+                decision_validator_supplied=validator_supplied,
             )
     return PSSVerdict(
         False,
         (),
         "no serial replay makes every declared read current and every write next-version legal",
-        decision_semantics_checked=checked,
+        decision_semantics_checked=decision_semantics_checked,
+        decision_validator_supplied=validator_supplied,
     )
 
 

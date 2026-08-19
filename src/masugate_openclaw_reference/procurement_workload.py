@@ -328,11 +328,12 @@ def _initial_policy_state_payload(history: History) -> list[dict[str, object]]:
 
 
 def _pss_payload(verdict: PSSVerdict) -> dict[str, object]:
-    """Preserve whether provider decision replay participated in the verdict."""
+    """Preserve validator configuration separately from replay execution."""
 
     return {
         "valid": verdict.pss,
         "reason": verdict.reason,
+        "decision_validator_supplied": verdict.decision_validator_supplied,
         "decision_semantics_checked": verdict.decision_semantics_checked,
     }
 
