@@ -18,9 +18,10 @@ neither sound nor complete for the PSS definition.
 
 The corrected checker constructs WR, WW, RW, and real-time dependencies,
 returns their provenance, and replays its serial witness. When a provider
-validator is supplied, it searches valid topological witnesses rather than
-letting transition names choose one order. The bounded search is explicitly
-inconclusive on budget exhaustion. The checker also rejects malformed version
+validator is supplied, it iteratively searches valid topological witnesses
+rather than letting transition names choose one order or Python's call-stack
+limit bound valid history length. The bounded search is explicitly inconclusive
+on budget exhaustion. The checker also rejects malformed version
 chains rather than silently overwriting duplicate writers or accepting missing
 versions.
 
@@ -43,7 +44,8 @@ The definition requires two distinct checks:
 The generic checker implements the first and accepts a provider decision
 validator for the second. Its verdict distinguishes a supplied validator from
 semantic replay that actually ran; callers must not describe a structural
-short-circuit as arbitrary-policy replay.
+short-circuit as arbitrary-policy replay. Retained evidence also serializes the
+separate `inconclusive` status so consumers never need to infer it from prose.
 
 ## Multi-phase actions
 

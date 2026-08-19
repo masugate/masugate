@@ -389,10 +389,19 @@ def _replay_witness(
 
 @dataclass(frozen=True)
 class _WitnessSearchResult:
-    serial_order: tuple[str, ...] = ()
+    serial_order: tuple[str, ...] | None = None
     replay_error: str | None = None
     decision_semantics_checked: bool = False
     inconclusive: bool = False
+
+
+@dataclass
+class _SearchFrame:
+    order: tuple[str, ...]
+    ready: tuple[str, ...]
+    indegree: dict[str, int]
+    state: dict[str, ScopeAccess]
+    next_index: int = 0
 
 
 def _search_semantic_witness(
@@ -424,54 +433,65 @@ def _search_semantic_witness(
     steps = 0
     checked = False
     last_error: str | None = None
-    exhausted = False
-
-    def search(
-        order: tuple[str, ...],
-        ready: tuple[str, ...],
-        current_indegree: dict[str, int],
-        state: dict[str, ScopeAccess],
-    ) -> tuple[str, ...] | None:
-        nonlocal steps, checked, exhausted, last_error
-        if len(order) == len(validated.operations):
-            return order
-        for index, operation_id in enumerate(ready):
-            if steps >= max_steps:
-                exhausted = True
-                return None
-            steps += 1
-            next_state = dict(state)
-            replay = _replay_operation(
-                by_id[operation_id],
-                next_state,
-                decision_validator=decision_validator,
+    stack = [
+        _SearchFrame(
+            order=(),
+            ready=initial_ready,
+            indegree=indegree,
+            state=dict(validated.initial_state),
+        )
+    ]
+    while stack:
+        frame = stack[-1]
+        if len(frame.order) == len(validated.operations):
+            return _WitnessSearchResult(
+                serial_order=frame.order,
+                replay_error=last_error,
+                decision_semantics_checked=checked,
             )
-            checked = checked or replay.decision_semantics_checked
-            if replay.error is not None:
-                last_error = replay.error
-                continue
-            next_indegree = dict(current_indegree)
-            next_ready = list(ready[:index] + ready[index + 1 :])
-            for target in successors[operation_id]:
-                next_indegree[target] -= 1
-                if next_indegree[target] == 0:
-                    next_ready.append(target)
-            witness = search(
-                (*order, operation_id),
-                tuple(sorted(next_ready)),
-                next_indegree,
-                next_state,
+        if frame.next_index == len(frame.ready):
+            stack.pop()
+            continue
+        if steps >= max_steps:
+            return _WitnessSearchResult(
+                replay_error=last_error,
+                decision_semantics_checked=checked,
+                inconclusive=True,
             )
-            if witness is not None or exhausted:
-                return witness
-        return None
 
-    witness = search((), initial_ready, indegree, dict(validated.initial_state))
+        index = frame.next_index
+        frame.next_index += 1
+        operation_id = frame.ready[index]
+        steps += 1
+        next_state = dict(frame.state)
+        replay = _replay_operation(
+            by_id[operation_id],
+            next_state,
+            decision_validator=decision_validator,
+        )
+        checked = checked or replay.decision_semantics_checked
+        if replay.error is not None:
+            last_error = replay.error
+            continue
+
+        next_indegree = dict(frame.indegree)
+        next_ready = list(frame.ready[:index] + frame.ready[index + 1 :])
+        for target in successors[operation_id]:
+            next_indegree[target] -= 1
+            if next_indegree[target] == 0:
+                next_ready.append(target)
+        stack.append(
+            _SearchFrame(
+                order=(*frame.order, operation_id),
+                ready=tuple(sorted(next_ready)),
+                indegree=next_indegree,
+                state=next_state,
+            )
+        )
+
     return _WitnessSearchResult(
-        serial_order=witness or (),
         replay_error=last_error,
         decision_semantics_checked=checked,
-        inconclusive=exhausted,
     )
 
 
@@ -559,7 +579,7 @@ def check_pss(
             decision_validator_supplied=True,
             inconclusive=True,
         )
-    if not search.serial_order:
+    if search.serial_order is None:
         return PSSVerdict(
             False,
             (),

@@ -1899,6 +1899,7 @@ def _validate_demo_evidence(
             pss.get("valid") is not True
             or pss.get("decision_validator_supplied") is not True
             or pss.get("decision_semantics_checked") is not True
+            or pss.get("inconclusive") is not False
         ):
             raise DemoRunnerError(f"{scenario} governed PSS evidence is invalid")
         statuses = [
@@ -1928,6 +1929,7 @@ def _validate_demo_evidence(
             "reason": governed_verdict.reason,
             "decision_validator_supplied": governed_verdict.decision_validator_supplied,
             "decision_semantics_checked": governed_verdict.decision_semantics_checked,
+            "inconclusive": governed_verdict.inconclusive,
         }:
             raise DemoRunnerError(f"{scenario} governed PSS report does not match its history")
         reservation = _mapping(raw_history[0], f"{scenario}.governed.reservation")
@@ -2062,6 +2064,7 @@ def _validate_demo_evidence(
             weak_pss.get("valid") is not False
             or weak_pss.get("decision_validator_supplied") is not True
             or weak_pss.get("decision_semantics_checked") is not False
+            or weak_pss.get("inconclusive") is not False
         ):
             raise DemoRunnerError("weak baseline unexpectedly passed PSS")
         weak_history = _validate_history(
@@ -2081,6 +2084,7 @@ def _validate_demo_evidence(
             "reason": weak_verdict.reason,
             "decision_validator_supplied": weak_verdict.decision_validator_supplied,
             "decision_semantics_checked": weak_verdict.decision_semantics_checked,
+            "inconclusive": weak_verdict.inconclusive,
         }:
             raise DemoRunnerError("weak baseline PSS report does not match its history")
         ledger_rows = _list(weak.get("effect_ledger"), "weak effect ledger")

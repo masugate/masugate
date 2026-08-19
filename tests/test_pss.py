@@ -373,6 +373,52 @@ def test_decision_validator_searches_all_serial_witnesses() -> None:
         assert oracle.pss
 
 
+def test_empty_validator_backed_history_has_an_empty_witness() -> None:
+    invoked: list[str] = []
+
+    def validator(operation: Operation, _state: Mapping[str, ScopeAccess]) -> str | None:
+        invoked.append(operation.op_id)
+        return None
+
+    history = History(())
+    verdict = check_pss(history, decision_validator=validator)
+    oracle = check_pss_exhaustively(history, decision_validator=validator)
+
+    assert verdict.pss, verdict.reason
+    assert verdict.serial_order == ()
+    assert verdict.decision_validator_supplied
+    assert not verdict.decision_semantics_checked
+    assert invoked == []
+    assert oracle.pss
+
+
+def test_semantic_witness_search_handles_histories_beyond_recursion_depth() -> None:
+    operation_count = 1_100
+    history = History(
+        tuple(
+            Operation(
+                f"operation-{index:04d}",
+                0,
+                0,
+                True,
+                decision="allow",
+            )
+            for index in range(operation_count)
+        )
+    )
+
+    def validator(_operation: Operation, _state: Mapping[str, ScopeAccess]) -> str | None:
+        return None
+
+    verdict = check_pss(history, decision_validator=validator)
+
+    assert verdict.pss, verdict.reason
+    assert verdict.serial_order is not None
+    assert len(verdict.serial_order) == operation_count
+    assert verdict.decision_validator_supplied
+    assert verdict.decision_semantics_checked
+
+
 def test_semantic_witness_search_reports_budget_exhaustion_as_inconclusive() -> None:
     history = History(
         (

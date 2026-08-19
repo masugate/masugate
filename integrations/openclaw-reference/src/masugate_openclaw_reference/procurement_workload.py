@@ -335,6 +335,7 @@ def _pss_payload(verdict: PSSVerdict) -> dict[str, object]:
         "reason": verdict.reason,
         "decision_validator_supplied": verdict.decision_validator_supplied,
         "decision_semantics_checked": verdict.decision_semantics_checked,
+        "inconclusive": verdict.inconclusive,
     }
 
 

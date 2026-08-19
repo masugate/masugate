@@ -403,6 +403,7 @@ def _concurrency_addon() -> dict[str, object]:
             "reason": governed_verdict.reason,
             "decision_validator_supplied": governed_verdict.decision_validator_supplied,
             "decision_semantics_checked": governed_verdict.decision_semantics_checked,
+            "inconclusive": governed_verdict.inconclusive,
         },
         "initial_policy_state": initial_policy_state,
         "history": governed_history,
@@ -461,6 +462,7 @@ def _concurrency_addon() -> dict[str, object]:
             "reason": weak_verdict.reason,
             "decision_validator_supplied": weak_verdict.decision_validator_supplied,
             "decision_semantics_checked": weak_verdict.decision_semantics_checked,
+            "inconclusive": weak_verdict.inconclusive,
         },
         "initial_policy_state": initial_policy_state,
         "history": weak_history,
@@ -476,6 +478,24 @@ def _concurrency_addon() -> dict[str, object]:
             "governed_pss_valid": governed["pss"],
         },
     }
+
+
+def test_release_verifier_rejects_inconclusive_concurrent_claim() -> None:
+    evidence = _concurrency_addon()
+    governed = evidence["governed"]
+    assert isinstance(governed, dict)
+    pss = governed["pss"]
+    assert isinstance(pss, dict)
+    pss["inconclusive"] = True
+
+    with pytest.raises(
+        release_verification_release.ReleaseVerificationReleaseError,
+        match="governed evidence does not replay as PSS",
+    ):
+        release_verification_release._validate_concurrency_addon(
+            evidence,
+            _spend_authorization_fixture(),
+        )
 
 
 def _valid_evidence() -> dict[str, object]:

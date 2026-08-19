@@ -10,9 +10,9 @@
 - Retain explicit decision, policy, timing, causal-transition, and certified
   policy-read-value evidence in the reference procurement realization; its
   fixed spend predicate is replayed during workload verification.
-- Search validator-backed serial witnesses, report bounded search exhaustion as
-  inconclusive, and distinguish a supplied validator from semantic replay that
-  actually ran in retained evidence.
+- Iteratively search validator-backed serial witnesses, report bounded search
+  exhaustion as inconclusive, and retain that status separately from a supplied
+  validator and semantic replay that actually ran in evidence.
 - Record the correction, evidence boundary, and paper/re-measurement gates in
   `docs/pss-v0.1.1-correction.md`. Existing v0.1.0 PSS measurements require
   rerunning before they support the corrected general claim.

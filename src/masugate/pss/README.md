@@ -72,15 +72,18 @@ Versions prove that the recorded policy evaluation observed the correct
 program. Providers that want the checker to verify predicate outcomes pass a
 `DecisionValidator` to `check_pss`. The validator receives the operation and
 witness-prefix state and may replay the retained policy bundle and inputs. To
-preserve PSS's existential definition, the checker searches ready transitions
-when a validator is supplied; it accepts the first serial witness whose policy
-decisions replay. The search is deterministic and bounded by
+preserve PSS's existential definition, the checker iteratively searches ready
+transitions when a validator is supplied; it accepts the first serial witness
+whose policy decisions replay without depending on Python recursion depth. The
+search is deterministic and bounded by
 `max_witness_search_steps` (100,000 operation attempts by default). Exhausting
 that budget returns a fail-closed, explicitly `inconclusive` verdict rather
 than claiming that no witness exists.
 
 `decision_validator_supplied` records configuration, while
-`decision_semantics_checked` is true only if the callback actually ran. This
+`decision_semantics_checked` is true only if the callback actually ran, and
+`inconclusive` records witness-search exhaustion. Evidence serializers retain
+all three independently. This
 keeps a structural cycle or malformed-history rejection from being mislabeled
 as policy replay. Without a validator, a successful verdict is structural PSS
 under the explicit trusted assumption that retained policy decisions and reads

@@ -516,6 +516,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                     "reason": "fixture",
                     "decision_validator_supplied": True,
                     "decision_semantics_checked": True,
+                    "inconclusive": False,
                 },
                 "initial_policy_state": [
                     {"scope": "spend:team:research", "version": 0, "value": 10_000}
@@ -597,6 +598,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
         "reason": verdict.reason,
         "decision_validator_supplied": verdict.decision_validator_supplied,
         "decision_semantics_checked": verdict.decision_semantics_checked,
+        "inconclusive": verdict.inconclusive,
     }
     return evidence, release
 
@@ -616,6 +618,7 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
         "reason": "serialization cycle (RW -> RW) among weak-alpha -> weak-beta -> weak-alpha",
         "decision_validator_supplied": True,
         "decision_semantics_checked": False,
+        "inconclusive": False,
     }
     history = report["history"]
     assert isinstance(history, list)
@@ -1143,6 +1146,21 @@ def test_governed_evidence_binds_terminal_state_and_release() -> None:
             wrong_release,
             expected_release_descriptor=release,
         )
+
+
+def test_governed_evidence_rejects_inconclusive_pss_claim() -> None:
+    runner = _runner()
+    evidence, release = _governed_envelope_fixture(runner)
+    payload = evidence["evidence"]
+    assert isinstance(payload, dict)
+    governed = payload["governed"]
+    assert isinstance(governed, dict)
+    pss = governed["pss"]
+    assert isinstance(pss, dict)
+    pss["inconclusive"] = True
+
+    with pytest.raises(runner.DemoRunnerError, match="governed PSS evidence is invalid"):
+        runner._validate_demo_evidence(evidence, expected_release_descriptor=release)
 
 
 def test_approval_replay_requires_two_overlapping_resolution_attempts() -> None:
