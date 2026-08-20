@@ -1017,7 +1017,7 @@ def _sha256(value: object, label: str) -> str:
 
 
 def _scope_value(value: object, label: str) -> ScopeValue:
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if value is None or isinstance(value, str | int | float | bool):
         if type(value) is float and not math.isfinite(value):
             raise ReleaseVerificationReleaseError(f"{label} must be finite")
         return value
@@ -1217,6 +1217,51 @@ def _validate_concurrent_history(
     return History(tuple(operations), initial_versions=initial_versions)
 
 
+def _operation_policy_metadata(operation: Operation) -> dict[str, str | None]:
+    """Return the policy replay claims carried by one serialized transition."""
+
+    return {
+        "policy_id": operation.policy_id,
+        "policy_version": operation.policy_version,
+        "evaluation_time": operation.evaluation_time,
+        "evaluation_input_digest": operation.evaluation_input_digest,
+    }
+
+
+def _validated_audit_policy_metadata(
+    audit: Mapping[str, object],
+    label: str,
+) -> dict[str, str]:
+    """Extract replay metadata only after the full audit chain has validated."""
+
+    policy = _mapping(audit.get("policy"), f"{label}.policy")
+    terminal = _mapping(audit.get("terminal_serialization"), f"{label}.terminal_serialization")
+    entitlement = _mapping(audit.get("entitlement"), f"{label}.entitlement")
+    return {
+        "policy_id": _string(policy.get("policy_id"), f"{label}.policy.policy_id"),
+        "policy_version": _string(policy.get("policy_version"), f"{label}.policy.policy_version"),
+        "evaluation_time": _string(
+            terminal.get("evaluation_at"),
+            f"{label}.terminal_serialization.evaluation_at",
+        ),
+        "evaluation_input_digest": _sha256(
+            entitlement.get("authorization_digest"),
+            f"{label}.entitlement.authorization_digest",
+        ),
+    }
+
+
+def _require_audit_bound_policy_metadata(
+    operation: Operation,
+    expected: Mapping[str, str],
+    label: str,
+) -> None:
+    if _operation_policy_metadata(operation) != dict(expected):
+        raise ReleaseVerificationReleaseError(
+            f"{label} policy replay metadata does not match its validated governance audit"
+        )
+
+
 def _audit_scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
     """Read the scope/version witness from richer serialized audit reads."""
 
@@ -1387,7 +1432,7 @@ def _validate_procurement_governance_records(
             "concurrent governance records must contain one commit and one denial"
         )
     committed_record, denied_record = committed[0], denied[0]
-    reservation, denial, _settlement = history.operations
+    reservation, denial, settlement = history.operations
     raw_reservation = _mapping(raw_history[0], "concurrent reservation transition")
     raw_settlement = _mapping(raw_history[2], "concurrent settlement transition")
     committed_id = _string(committed_record.get("operation_id"), "committed audit operation")
@@ -1517,6 +1562,29 @@ def _validate_procurement_governance_records(
         )
     except AuditValidationError as exc:
         raise ReleaseVerificationReleaseError(str(exc)) from exc
+    committed_metadata = _validated_audit_policy_metadata(
+        committed_record,
+        "concurrent committed audit",
+    )
+    denied_metadata = _validated_audit_policy_metadata(
+        denied_record,
+        "concurrent denied audit",
+    )
+    _require_audit_bound_policy_metadata(
+        reservation,
+        committed_metadata,
+        "concurrent reservation transition",
+    )
+    _require_audit_bound_policy_metadata(
+        settlement,
+        committed_metadata,
+        "concurrent settlement transition",
+    )
+    _require_audit_bound_policy_metadata(
+        denial,
+        denied_metadata,
+        "concurrent denial transition",
+    )
 
 
 def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str, object]) -> None:

@@ -1087,7 +1087,7 @@ def _envelope(
 
 
 def _scope_value(value: object, label: str) -> ScopeValue:
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if value is None or isinstance(value, str | int | float | bool):
         if type(value) is float and not math.isfinite(value):
             raise DemoRunnerError(f"{label} must be finite")
         return value
@@ -1236,6 +1236,53 @@ def _validate_history(
     if not initial_versions:
         raise DemoRunnerError(f"{label} must retain an initial policy-state baseline")
     return History(tuple(operations), initial_versions=initial_versions)
+
+
+def _operation_policy_metadata(operation: Operation) -> dict[str, str | None]:
+    """Return the policy replay claims carried by one serialized transition."""
+
+    return {
+        "policy_id": operation.policy_id,
+        "policy_version": operation.policy_version,
+        "evaluation_time": operation.evaluation_time,
+        "evaluation_input_digest": operation.evaluation_input_digest,
+    }
+
+
+def _validated_audit_policy_metadata(
+    audit: Mapping[str, object],
+    label: str,
+) -> dict[str, str]:
+    """Extract replay metadata only after the caller validates the full audit."""
+
+    policy = _mapping(audit.get("policy"), f"{label}.policy")
+    terminal = _mapping(audit.get("terminal_serialization"), f"{label}.terminal_serialization")
+    entitlement = _mapping(audit.get("entitlement"), f"{label}.entitlement")
+    evaluation_time = _string(
+        terminal.get("evaluation_at"),
+        f"{label}.terminal_serialization.evaluation_at",
+    )
+    _timestamp(evaluation_time, f"{label}.terminal_serialization.evaluation_at")
+    return {
+        "policy_id": _string(policy.get("policy_id"), f"{label}.policy.policy_id"),
+        "policy_version": _string(policy.get("policy_version"), f"{label}.policy.policy_version"),
+        "evaluation_time": evaluation_time,
+        "evaluation_input_digest": _sha256_string(
+            entitlement.get("authorization_digest"),
+            f"{label}.entitlement.authorization_digest",
+        ),
+    }
+
+
+def _require_audit_bound_policy_metadata(
+    operation: Operation,
+    expected: Mapping[str, str],
+    label: str,
+) -> None:
+    if _operation_policy_metadata(operation) != dict(expected):
+        raise DemoRunnerError(
+            f"{label} policy replay metadata does not match its validated governance audit"
+        )
 
 
 def _validate_scenario_request(
@@ -2020,6 +2067,30 @@ def _validate_demo_evidence(
             raise DemoRunnerError(
                 f"{scenario} serialized history does not match both terminal audit reads"
             )
+        committed_metadata = _validated_audit_policy_metadata(
+            committed_audit,
+            f"{scenario}.committed governance_record",
+        )
+        denied_metadata = _validated_audit_policy_metadata(
+            denied_audit,
+            f"{scenario}.denied governance_record",
+        )
+        reservation_operation, denial_operation, settlement_operation = history.operations
+        _require_audit_bound_policy_metadata(
+            reservation_operation,
+            committed_metadata,
+            f"{scenario} reservation transition",
+        )
+        _require_audit_bound_policy_metadata(
+            settlement_operation,
+            committed_metadata,
+            f"{scenario} settlement transition",
+        )
+        _require_audit_bound_policy_metadata(
+            denial_operation,
+            denied_metadata,
+            f"{scenario} denial transition",
+        )
         committed_effect = _mapping(
             committed_audit.get("effect"), f"{scenario}.committed audit effect"
         )

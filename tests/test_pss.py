@@ -78,6 +78,59 @@ def test_repeated_views_of_one_scope_share_one_snapshot() -> None:
     assert check_pss(History((op,))).pss
 
 
+def test_repeated_reads_accept_identical_or_one_unretained_value() -> None:
+    for index, (policy_value, effect_value) in enumerate(
+        ((7, 7), (None, 7), (7, None), (True, True))
+    ):
+        operation = Operation(
+            op_id=f"compatible-{index}",
+            begin_ns=0,
+            commit_ns=10,
+            committed=True,
+            policy_reads=(ScopeAccess(S, 0, policy_value),),
+            effect_reads=(ScopeAccess(S, 0, effect_value),),
+        )
+        history = History((operation,), initial_versions=(ScopeAccess(S, 0, 7),))
+
+        assert check_pss(history).pss
+        assert check_pss_exhaustively(history).pss
+
+
+def test_repeated_reads_reject_conflicting_values_and_scalar_types() -> None:
+    for index, (policy_value, effect_value) in enumerate(((7, 8), (True, 1), (1, 1.0))):
+        operation = Operation(
+            op_id=f"conflicting-{index}",
+            begin_ns=0,
+            commit_ns=10,
+            committed=True,
+            policy_reads=(ScopeAccess(S, 0, policy_value),),
+            effect_reads=(ScopeAccess(S, 0, effect_value),),
+        )
+        history = History((operation,), initial_versions=(ScopeAccess(S, 0, policy_value),))
+
+        verdict = check_pss(history)
+        oracle = check_pss_exhaustively(history)
+
+        assert not verdict.pss
+        assert "conflicting values" in verdict.reason
+        assert not oracle.pss
+        assert "conflicting values" in oracle.reason
+
+
+def test_single_read_value_remains_provider_evidence_not_a_structural_comparison() -> None:
+    operation = Operation(
+        op_id="provider-evidence",
+        begin_ns=0,
+        commit_ns=10,
+        committed=True,
+        policy_reads=(ScopeAccess(S, 0, 8),),
+    )
+    history = History((operation,), initial_versions=(ScopeAccess(S, 0, 7),))
+
+    assert check_pss(history).pss
+    assert check_pss_exhaustively(history).pss
+
+
 def test_one_operation_with_conflicting_scope_versions_is_not_pss() -> None:
     op = _op(
         "A",
@@ -271,6 +324,152 @@ def test_explicit_baseline_allows_a_retained_history_suffix() -> None:
 
     assert check_pss(history).pss
     assert check_pss_exhaustively(history).pss
+
+
+def test_duplicate_initial_baselines_are_malformed_even_when_compatible() -> None:
+    for baselines in (
+        (ScopeAccess("budget", 5, 100), ScopeAccess("budget", 5, 100)),
+        (ScopeAccess("budget", 5), ScopeAccess("budget", 5, 100)),
+    ):
+        history = History(initial_versions=baselines)
+        verdict = check_pss(history)
+        oracle = check_pss_exhaustively(history)
+
+        assert not verdict.pss
+        assert "repeats the baseline" in verdict.reason
+        assert not oracle.pss
+        assert "repeats scope" in oracle.reason
+
+
+def test_conflicting_initial_baseline_versions_values_and_types_are_malformed() -> None:
+    for baselines in (
+        (ScopeAccess("budget", 4, 100), ScopeAccess("budget", 5, 100)),
+        (ScopeAccess("budget", 5, 100), ScopeAccess("budget", 5, 40)),
+        (ScopeAccess("budget", 5, True), ScopeAccess("budget", 5, 1)),
+        (ScopeAccess("budget", 5, 1), ScopeAccess("budget", 5, 1.0)),
+    ):
+        history = History(initial_versions=baselines)
+
+        verdict = check_pss(history)
+        oracle = check_pss_exhaustively(history)
+
+        assert not verdict.pss
+        assert "malformed PSS history" in verdict.reason
+        assert not oracle.pss
+        assert "malformed PSS history" in oracle.reason
+
+
+def test_checker_and_oracle_reject_malformed_id_intervals_and_access_shapes() -> None:
+    malformed_histories = (
+        History((Operation("", 0, 0, False),)),
+        History((Operation("negative-begin", -1, 0, False),)),
+        History((Operation("backwards", 2, 1, False),)),
+        History(initial_versions=(ScopeAccess("", 0),)),
+        History(initial_versions=(ScopeAccess("budget", -1),)),
+        History(
+            (
+                Operation(
+                    "empty-read-scope",
+                    0,
+                    1,
+                    True,
+                    policy_reads=(ScopeAccess("", 0),),
+                ),
+            )
+        ),
+        History(
+            (
+                Operation(
+                    "negative-read-version",
+                    0,
+                    1,
+                    True,
+                    policy_reads=(ScopeAccess("budget", -1),),
+                ),
+            )
+        ),
+        History(
+            (
+                Operation(
+                    "empty-write-scope",
+                    0,
+                    1,
+                    True,
+                    effect_writes=(ScopeAccess("", 1),),
+                ),
+            )
+        ),
+        History(
+            (
+                Operation(
+                    "negative-write-version",
+                    0,
+                    1,
+                    True,
+                    effect_writes=(ScopeAccess("budget", -1),),
+                ),
+            )
+        ),
+    )
+
+    for history in malformed_histories:
+        verdict = check_pss(history)
+        oracle = check_pss_exhaustively(history)
+
+        assert not verdict.pss
+        assert verdict.reason.startswith("malformed PSS history:")
+        assert not oracle.pss
+        assert oracle.reason.startswith("malformed PSS history:")
+
+
+def test_malformed_history_never_invokes_a_supplied_decision_validator() -> None:
+    invoked: list[str] = []
+
+    def validator(operation: Operation, _state: Mapping[str, ScopeAccess]) -> str | None:
+        invoked.append(operation.op_id)
+        return None
+
+    history = History((Operation("backwards", 2, 1, True, decision="allow"),))
+    for verifier in (check_pss, check_pss_exhaustively):
+        verdict = verifier(history, decision_validator=validator)
+
+        assert not verdict.pss
+        assert verdict.decision_validator_supplied
+        assert not verdict.decision_semantics_checked
+        assert invoked == []
+
+
+def test_malformed_writer_chains_never_invoke_a_supplied_decision_validator() -> None:
+    malformed_histories = (
+        History(
+            (
+                _op("first", 0, 10, committed=True, writes=[(S, 1)]),
+                _op("duplicate", 0, 10, committed=True, writes=[(S, 1)]),
+            )
+        ),
+        History(
+            (
+                _op("first", 0, 10, committed=True, writes=[(S, 1)]),
+                _op("gap", 0, 10, committed=True, writes=[(S, 3)]),
+            )
+        ),
+    )
+
+    invoked: list[str] = []
+
+    def validator(operation: Operation, _state: Mapping[str, ScopeAccess]) -> str | None:
+        invoked.append(operation.op_id)
+        return None
+
+    for history in malformed_histories:
+        for verifier in (check_pss, check_pss_exhaustively):
+            invoked.clear()
+            verdict = verifier(history, decision_validator=validator)
+
+            assert not verdict.pss
+            assert verdict.decision_validator_supplied
+            assert not verdict.decision_semantics_checked
+            assert invoked == []
 
 
 def test_observable_reservation_is_a_separate_transition() -> None:

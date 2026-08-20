@@ -24,9 +24,12 @@ For every visible transition, the history retains:
   evaluation-input digest;
 - a causal action identity and transition kind for multi-phase operations.
 
-A retained history suffix may declare a baseline version for each included
-scope. A history that starts at the ordinary initial state omits those entries,
-which means version zero.
+A retained history suffix may declare one baseline version for each included
+scope. Duplicate baselines are malformed rather than resolved by tuple order.
+Repeated reads of one scope/version are compatible only when their retained
+concrete values have the same JSON-scalar type and value; an omitted value does
+not conflict with a retained one. A history that starts at the ordinary initial
+state omits those entries, which means version zero.
 
 Reservations are visible transitions. If creating a reservation changes
 capacity seen by a concurrent policy evaluation, the reservation write is one
@@ -93,6 +96,12 @@ Certified evaluation time and policy identity/version belong to this replay
 boundary. A rolling window or an activated policy version must be provided to
 the validator as recorded, provider-certified input; it is not inferred from a
 caller clock or from effect versions alone.
+
+The reference spend verifier additionally cross-checks policy identity,
+runtime version, certified evaluation time, and evaluation-input digest against
+the corresponding validated governance audit. This exact binding, rather than
+format validation alone, is what lets its retained semantic-replay flag support
+the reference release claim.
 
 ## Correctness argument for the declared version model
 

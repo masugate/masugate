@@ -20,6 +20,7 @@ import time
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Literal, cast
 
 import httpx
@@ -40,6 +41,7 @@ _OWNER_HEADERS = {
 }
 _BUDGET_CENTS = 10_000
 _RACE_AMOUNT_CENTS = 6_000
+_POLICY_ID = "spend_budget_guard"
 
 
 class DemoError(RuntimeError):
@@ -348,7 +350,35 @@ def reference_spend_decision_validator(
     This is intentionally provider-specific.  The generic PSS checker proves
     versioned serialization; this callback also verifies the 6,000-cent
     capacity decision and the value transition at that serial point.
+    It validates policy metadata shape; the claim-bearing demo and release
+    verifiers separately bind those exact values to a validated audit.
     """
+
+    if operation.policy_id != _POLICY_ID:
+        return f"reference spend transition must name policy {_POLICY_ID}"
+    policy_version = operation.policy_version
+    if (
+        policy_version is None
+        or len(policy_version) != 16
+        or any(character not in "0123456789abcdef" for character in policy_version)
+    ):
+        return "reference spend transition must retain its 16-character runtime policy version"
+    evaluation_time = operation.evaluation_time
+    if evaluation_time is None:
+        return "reference spend transition must retain its certified evaluation time"
+    try:
+        parsed_evaluation_time = datetime.fromisoformat(evaluation_time.replace("Z", "+00:00"))
+    except ValueError:
+        return "reference spend transition has an invalid certified evaluation time"
+    if parsed_evaluation_time.tzinfo is None:
+        return "reference spend transition evaluation time must include a timezone"
+    input_digest = operation.evaluation_input_digest
+    if (
+        input_digest is None
+        or len(input_digest) != 64
+        or any(character not in "0123456789abcdef" for character in input_digest)
+    ):
+        return "reference spend transition must retain a lowercase SHA-256 input digest"
 
     if operation.kind == "terminal-settlement":
         if len(operation.effect_reads) != 1 or len(operation.effect_writes) != 1:
