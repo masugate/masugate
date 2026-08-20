@@ -12,6 +12,7 @@ import subprocess
 import sys
 import zipfile
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, cast
 
@@ -20,7 +21,10 @@ import pytest
 from masugate.providers import ReferencePurchaseCredentialManifest
 from masugate.pss import History, Operation, ScopeAccess, check_pss
 from masugate_openclaw_reference import gateway_recovery_live
-from masugate_openclaw_reference.procurement_workload import weak_request_time_baseline
+from masugate_openclaw_reference.procurement_workload import (
+    reference_spend_decision_validator,
+    weak_request_time_baseline,
+)
 
 ROOT = Path(__file__).parents[1]
 CONTAINMENT = ROOT / "integrations" / "openclaw-reference" / "containment"
@@ -412,6 +416,20 @@ def _denied_audit_fixture(
     }
 
 
+def _history_policy_metadata(audit: dict[str, object]) -> dict[str, object]:
+    policy = cast(dict[str, object], audit["policy"])
+    terminal = cast(dict[str, object], audit["terminal_serialization"])
+    entitlement = cast(dict[str, object], audit["entitlement"])
+    decision = cast(dict[str, object], audit["decision"])
+    return {
+        "decision": decision["effect"],
+        "policy_id": policy["policy_id"],
+        "policy_version": policy["policy_version"],
+        "evaluation_time": terminal["evaluation_at"],
+        "evaluation_input_digest": entitlement["authorization_digest"],
+    }
+
+
 def _refresh_binding(audit: dict[str, object]) -> None:
     protected = audit["protected_execution"]
     assert isinstance(protected, dict)
@@ -488,6 +506,9 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
         idempotency_key="reference_demo-e2-alpha",
         operation_id=operation_id,
     )
+    denied_audit = _denied_audit_fixture(runner)
+    committed_metadata = _history_policy_metadata(audit)
+    denied_metadata = _history_policy_metadata(denied_audit)
     evidence = {
         "schema_version": runner._EVIDENCE_SCHEMA,
         "scenario_id": "race",
@@ -537,6 +558,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "effect_writes": [
                             {"scope": "spend:team:research", "version": 1, "value": 4_000}
                         ],
+                        **committed_metadata,
                     },
                     {
                         "operation_id": "22222222-2222-4222-8222-222222222222",
@@ -550,6 +572,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         ],
                         "effect_reads": [],
                         "effect_writes": [],
+                        **denied_metadata,
                     },
                     {
                         "operation_id": f"{operation_id}:settlement",
@@ -565,6 +588,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "effect_writes": [
                             {"scope": "spend:team:research", "version": 2, "value": 4_000}
                         ],
+                        **committed_metadata,
                     },
                 ],
                 "final_policy_state": {
@@ -575,7 +599,7 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                     "held_cents": 0,
                     "available_cents": 4_000,
                 },
-                "governance_records": [audit, _denied_audit_fixture(runner)],
+                "governance_records": [audit, denied_audit],
             },
         },
     }
@@ -660,6 +684,42 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
     assert isinstance(ledger, list)
     assert sum(effect["amount_cents"] for effect in ledger) == 12_000
     assert {effect["budget_version"] for effect in ledger} == {1, 2}
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("policy_id", "another_policy"),
+        ("policy_version", "not-hex-version!"),
+        ("evaluation_time", "2026-07-21T12:00:00"),
+        ("evaluation_input_digest", "A" * 64),
+    ],
+)
+def test_reference_spend_validator_requires_policy_metadata_shape(
+    field: str,
+    replacement: str,
+) -> None:
+    scope = "spend:team:research"
+    operation = Operation(
+        op_id="denied",
+        begin_ns=1,
+        commit_ns=2,
+        committed=False,
+        policy_reads=(ScopeAccess(scope, 0, 4_000),),
+        decision="deny",
+        policy_id="spend_budget_guard",
+        policy_version="a" * 16,
+        evaluation_time="2026-07-21T12:00:00+00:00",
+        evaluation_input_digest="b" * 64,
+        transition_kind="terminal-denial",
+    )
+    state = {scope: ScopeAccess(scope, 0, 4_000)}
+
+    assert reference_spend_decision_validator(operation, state) is None
+    assert (
+        reference_spend_decision_validator(replace(operation, **{field: replacement}), state)
+        is not None
+    )
 
 
 def test_committed_evidence_rejects_self_consistent_wrong_bindings() -> None:
@@ -1146,6 +1206,37 @@ def test_governed_evidence_binds_terminal_state_and_release() -> None:
             wrong_release,
             expected_release_descriptor=release,
         )
+
+
+@pytest.mark.parametrize(
+    ("transition_index", "field", "replacement", "match"),
+    [
+        (0, "policy_id", "spend_budget_guard_next", "history does not replay as PSS"),
+        (0, "policy_version", "f" * 16, "policy replay metadata"),
+        (1, "evaluation_input_digest", "f" * 64, "policy replay metadata"),
+        (
+            2,
+            "evaluation_time",
+            "2026-07-21T12:00:00.000001+00:00",
+            "policy replay metadata",
+        ),
+    ],
+)
+def test_governed_evidence_rejects_history_policy_metadata_only_tampering(
+    transition_index: int,
+    field: str,
+    replacement: str,
+    match: str,
+) -> None:
+    runner = _runner()
+    evidence, release = _governed_envelope_fixture(runner)
+    payload = cast(dict[str, object], evidence["evidence"])
+    governed = cast(dict[str, object], payload["governed"])
+    history = cast(list[dict[str, object]], governed["history"])
+    history[transition_index][field] = replacement
+
+    with pytest.raises(runner.DemoRunnerError, match=match):
+        runner._validate_demo_evidence(evidence, expected_release_descriptor=release)
 
 
 def test_governed_evidence_rejects_inconclusive_pss_claim() -> None:

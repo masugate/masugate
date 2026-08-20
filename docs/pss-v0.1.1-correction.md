@@ -75,7 +75,11 @@ The reference procurement workload now retains policy-read values, an explicit
 initial policy-state baseline, and runs its fixed spend predicate through a
 provider validator. Its independent demo and release-evidence verifiers rebuild
 that complete history, invoke the same validator, and compare the resulting
-semantic PSS verdict rather than trusting a producer-supplied flag. Its
+semantic PSS verdict rather than trusting a producer-supplied flag. They also
+bind every transition's policy identity, runtime version, certified evaluation
+time, and evaluation-input digest to its corresponding fully validated audit;
+the audit's policy version is in turn checked against the executed release
+anchor. Its
 evidence records validator supply separately from actual semantic replay, so a
 structural cycle is not mislabeled as policy validation. Other providers
 receive only a structural PSS verdict until they pass a validator. Existing

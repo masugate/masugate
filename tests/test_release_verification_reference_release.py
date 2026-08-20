@@ -304,9 +304,48 @@ def _governance_record(
     return record
 
 
+def _history_policy_metadata(audit: dict[str, object]) -> dict[str, object]:
+    policy = cast(dict[str, object], audit["policy"])
+    terminal = cast(dict[str, object], audit["terminal_serialization"])
+    entitlement = cast(dict[str, object], audit["entitlement"])
+    decision = cast(dict[str, object], audit["decision"])
+    return {
+        "decision": decision["effect"],
+        "policy_id": policy["policy_id"],
+        "policy_version": policy["policy_version"],
+        "evaluation_time": terminal["evaluation_at"],
+        "evaluation_input_digest": entitlement["authorization_digest"],
+    }
+
+
 def _concurrency_addon() -> dict[str, object]:
     scope = "spend:team:research"
     initial_policy_state = [{"scope": scope, "version": 0, "value": 10_000}]
+    committed_record = _governance_record(
+        operation_id="committed",
+        key="reference_demo-e2-alpha",
+        principal="openclaw:buyer-alpha",
+        amount_cents=6_000,
+        merchant_id="reference-demo-procurement",
+        request_ref="reference_demo-e2-alpha",
+        status="committed",
+        read_value=10_000,
+        read_version=0,
+        budget_version=1,
+    )
+    denied_record = _governance_record(
+        operation_id="denied",
+        key="reference_demo-e2-beta",
+        principal="openclaw:buyer-beta",
+        amount_cents=6_000,
+        merchant_id="reference-demo-procurement",
+        request_ref="reference_demo-e2-beta",
+        status="denied",
+        read_value=4_000,
+        read_version=1,
+    )
+    committed_metadata = _history_policy_metadata(committed_record)
+    denied_metadata = _history_policy_metadata(denied_record)
     governed_history = [
         {
             "operation_id": "committed:reservation",
@@ -318,6 +357,7 @@ def _concurrency_addon() -> dict[str, object]:
             "policy_reads": [{"scope": scope, "version": 0, "value": 10_000}],
             "effect_reads": [],
             "effect_writes": [{"scope": scope, "version": 1, "value": 4_000}],
+            **committed_metadata,
         },
         {
             "operation_id": "denied",
@@ -329,6 +369,7 @@ def _concurrency_addon() -> dict[str, object]:
             "policy_reads": [{"scope": scope, "version": 1, "value": 4_000}],
             "effect_reads": [],
             "effect_writes": [],
+            **denied_metadata,
         },
         {
             "operation_id": "committed:settlement",
@@ -340,6 +381,7 @@ def _concurrency_addon() -> dict[str, object]:
             "policy_reads": [],
             "effect_reads": [{"scope": scope, "version": 1, "value": 4_000}],
             "effect_writes": [{"scope": scope, "version": 2, "value": 4_000}],
+            **committed_metadata,
         },
     ]
     weak_history = [
@@ -415,31 +457,7 @@ def _concurrency_addon() -> dict[str, object]:
             "held_cents": 0,
             "available_cents": 4_000,
         },
-        "governance_records": [
-            _governance_record(
-                operation_id="committed",
-                key="reference_demo-e2-alpha",
-                principal="openclaw:buyer-alpha",
-                amount_cents=6_000,
-                merchant_id="reference-demo-procurement",
-                request_ref="reference_demo-e2-alpha",
-                status="committed",
-                read_value=10_000,
-                read_version=0,
-                budget_version=1,
-            ),
-            _governance_record(
-                operation_id="denied",
-                key="reference_demo-e2-beta",
-                principal="openclaw:buyer-beta",
-                amount_cents=6_000,
-                merchant_id="reference-demo-procurement",
-                request_ref="reference_demo-e2-beta",
-                status="denied",
-                read_value=4_000,
-                read_version=1,
-            ),
-        ],
+        "governance_records": [committed_record, denied_record],
     }
     weak = {
         "kind": "deliberately-weak-request-time-baseline",
@@ -1140,6 +1158,40 @@ def test_release_evidence_replays_concurrency_and_e6_transitions() -> None:
     with pytest.raises(
         release_verification_release.ReleaseVerificationReleaseError,
         match="not internally reconciled",
+    ):
+        release_verification_release.validate_release_evidence(evidence)
+
+
+@pytest.mark.parametrize(
+    ("transition_index", "field", "replacement", "match"),
+    [
+        (0, "policy_id", "spend_budget_guard_next", "does not replay as PSS"),
+        (0, "policy_version", "f" * 16, "policy replay metadata"),
+        (1, "evaluation_input_digest", "f" * 64, "policy replay metadata"),
+        (
+            2,
+            "evaluation_time",
+            "2026-07-21T12:00:00.000001+00:00",
+            "policy replay metadata",
+        ),
+    ],
+)
+def test_release_evidence_rejects_history_policy_metadata_only_tampering(
+    transition_index: int,
+    field: str,
+    replacement: str,
+    match: str,
+) -> None:
+    evidence = _valid_evidence()
+    adversarial = cast(dict[str, object], evidence["adversarial"])
+    concurrent = cast(dict[str, object], adversarial["concurrent_addon"])
+    governed = cast(dict[str, object], concurrent["governed"])
+    history = cast(list[dict[str, object]], governed["history"])
+    history[transition_index][field] = replacement
+
+    with pytest.raises(
+        release_verification_release.ReleaseVerificationReleaseError,
+        match=match,
     ):
         release_verification_release.validate_release_evidence(evidence)
 

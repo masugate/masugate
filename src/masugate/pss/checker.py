@@ -182,7 +182,23 @@ def _scope_versions(accesses: tuple[ScopeAccess, ...]) -> tuple[dict[str, ScopeA
                 f"mentions multiple versions of {access.scope} "
                 f"({existing.version} and {access.version})"
             )
-        by_scope[access.scope] = access
+        if (
+            existing is not None
+            and existing.value is not None
+            and access.value is not None
+            and (
+                type(existing.value) is not type(access.value)
+                or existing.value != access.value
+            )
+        ):
+            return {}, (
+                f"records conflicting values for {access.scope} version {access.version}"
+            )
+        # ``None`` means that this view did not retain a provider-certified
+        # value.  It is compatible with a concrete view of the same version,
+        # and the concrete value is the useful canonical representative.
+        if existing is None or (existing.value is None and access.value is not None):
+            by_scope[access.scope] = access
     return by_scope, None
 
 
@@ -197,6 +213,13 @@ def _validate_history(history: History) -> _ValidatedHistory | str:
     initial_state, initial_error = _scope_versions(history.initial_versions)
     if initial_error is not None:
         return f"initial policy state {initial_error}"
+    if len(initial_state) != len(history.initial_versions):
+        seen_initial_scopes: set[str] = set()
+        for access in history.initial_versions:
+            if access.scope in seen_initial_scopes:
+                return f"initial policy state repeats the baseline for {access.scope}"
+            seen_initial_scopes.add(access.scope)
+        raise AssertionError("collapsed initial state did not contain a repeated scope")
 
     writers_by_scope: dict[str, list[tuple[int, str]]] = defaultdict(list)
     writer_of: dict[tuple[str, int], str] = {}

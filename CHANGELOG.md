@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Reject duplicate retained baselines and conflicting typed values across
+  repeated reads, and align the bounded exhaustive oracle with production
+  malformed-history validation.
+- Bind reference spend policy identity, runtime version, certified evaluation
+  time, and evaluation-input digest to the corresponding validated governance
+  audits, with metadata-only tamper regressions in both evidence verifiers.
+
 ## 0.1.1 — 2026-08-17
 
 - Correct Policy-State Serializability (PSS): add RW anti-dependencies,

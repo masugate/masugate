@@ -14,13 +14,58 @@ from masugate.pss.checker import DecisionValidator, PSSVerdict
 from masugate.pss.model import History, Operation, ScopeAccess
 
 
+def _accesses_error(
+    accesses: tuple[ScopeAccess, ...],
+    *,
+    subject: str,
+    allow_compatible_repeats: bool,
+) -> str | None:
+    """Validate one access collection without using checker internals."""
+
+    by_scope: dict[str, ScopeAccess] = {}
+    for access in accesses:
+        if not access.scope:
+            return f"{subject} contains an empty scope name"
+        if access.version < 0:
+            return f"{subject} uses negative version {access.version} for {access.scope}"
+        existing = by_scope.get(access.scope)
+        if existing is None:
+            by_scope[access.scope] = access
+            continue
+        if existing.version != access.version:
+            return (
+                f"{subject} mentions multiple versions of {access.scope} "
+                f"({existing.version} and {access.version})"
+            )
+        if (
+            existing.value is not None
+            and access.value is not None
+            and (
+                type(existing.value) is not type(access.value)
+                or existing.value != access.value
+            )
+        ):
+            return (
+                f"{subject} records conflicting values for {access.scope} "
+                f"version {access.version}"
+            )
+        if not allow_compatible_repeats:
+            return f"{subject} repeats scope {access.scope}"
+        if existing.value is None and access.value is not None:
+            by_scope[access.scope] = access
+    return None
+
+
 def _initial_state(history: History) -> dict[str, ScopeAccess]:
+    error = _accesses_error(
+        history.initial_versions,
+        subject="initial policy state",
+        allow_compatible_repeats=False,
+    )
+    if error is not None:
+        raise ValueError(error)
     state: dict[str, ScopeAccess] = {}
     for access in history.initial_versions:
-        if access.scope in state and state[access.scope].version != access.version:
-            raise ValueError(f"conflicting initial versions for {access.scope}")
-        if access.version < 0:
-            raise ValueError(f"negative initial version for {access.scope}")
         state[access.scope] = access
     for operation in history.operations:
         for access in (*operation.reads, *operation.effect_writes):
@@ -29,14 +74,16 @@ def _initial_state(history: History) -> dict[str, ScopeAccess]:
 
 
 def _reads_are_current(operation: Operation, state: dict[str, ScopeAccess]) -> bool:
-    versions: dict[str, int] = {}
-    for read in operation.reads:
-        if read.version < 0 or not read.scope:
-            return False
-        existing = versions.setdefault(read.scope, read.version)
-        if existing != read.version or state[read.scope].version != read.version:
-            return False
-    return True
+    if (
+        _accesses_error(
+            operation.reads,
+            subject=f"operation {operation.op_id}",
+            allow_compatible_repeats=True,
+        )
+        is not None
+    ):
+        return False
+    return all(state[read.scope].version == read.version for read in operation.reads)
 
 
 def _writes_are_next(operation: Operation, state: dict[str, ScopeAccess]) -> bool:
@@ -48,6 +95,29 @@ def _writes_are_next(operation: Operation, state: dict[str, ScopeAccess]) -> boo
             return False
         seen.add(write.scope)
     return True
+
+
+def _operation_error(operation: Operation) -> str | None:
+    if operation.begin_ns < 0 or operation.commit_ns < operation.begin_ns:
+        return f"operation {operation.op_id} has an invalid real-time interval"
+    if operation.decision is not None and operation.decision != (
+        "allow" if operation.committed else "deny"
+    ):
+        return f"operation {operation.op_id} has a decision inconsistent with committed"
+    if not operation.committed and operation.effect_writes:
+        return f"denied operation {operation.op_id} contains policy-state writes"
+    read_error = _accesses_error(
+        operation.reads,
+        subject=f"operation {operation.op_id}",
+        allow_compatible_repeats=True,
+    )
+    if read_error is not None:
+        return read_error
+    return _accesses_error(
+        operation.effect_writes,
+        subject=f"operation {operation.op_id}",
+        allow_compatible_repeats=False,
+    )
 
 
 def _respects_real_time(order: tuple[Operation, ...]) -> bool:
@@ -90,6 +160,13 @@ def check_pss_exhaustively(
             "malformed PSS history: duplicate transition identities",
             decision_validator_supplied=validator_supplied,
         )
+    if any(not operation.op_id for operation in operations):
+        return PSSVerdict(
+            False,
+            (),
+            "malformed PSS history: empty transition identity",
+            decision_validator_supplied=validator_supplied,
+        )
     try:
         initial = _initial_state(history)
     except ValueError as exc:
@@ -99,6 +176,15 @@ def check_pss_exhaustively(
             f"malformed PSS history: {exc}",
             decision_validator_supplied=validator_supplied,
         )
+    for operation in operations:
+        operation_error = _operation_error(operation)
+        if operation_error is not None:
+            return PSSVerdict(
+                False,
+                (),
+                f"malformed PSS history: {operation_error}",
+                decision_validator_supplied=validator_supplied,
+            )
 
     for order in permutations(operations):
         if real_time and not _respects_real_time(order):
@@ -106,11 +192,6 @@ def check_pss_exhaustively(
         state = dict(initial)
         accepted = True
         for operation in order:
-            if operation.decision is not None and operation.decision != (
-                "allow" if operation.committed else "deny"
-            ):
-                accepted = False
-                break
             if not _reads_are_current(operation, state) or not _writes_are_next(operation, state):
                 accepted = False
                 break
