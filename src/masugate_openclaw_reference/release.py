@@ -16,7 +16,7 @@ from typing import Any, cast
 import psycopg
 from psycopg.rows import dict_row
 
-REFERENCE_RELEASE_VERSION = "0.1.0"
+REFERENCE_RELEASE_VERSION = "0.1.1"
 REFERENCE_RELEASE_ID = f"masugate-openclaw-reference/{REFERENCE_RELEASE_VERSION}"
 REFERENCE_SCHEMA_ID = "masugate-openclaw-reference"
 REFERENCE_SCHEMA_VERSION = 1

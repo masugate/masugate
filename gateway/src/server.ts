@@ -22,7 +22,7 @@ function protocolError(error: unknown): never {
 
 export function createGatewayServer(router: GatewayRouter): Server {
   const server = new Server(
-    { name: "masugate-mcp-gateway", version: "0.1.0" },
+    { name: "masugate-mcp-gateway", version: "0.1.1" },
     {
       capabilities: { tools: {} },
       instructions:

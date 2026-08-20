@@ -29,4 +29,4 @@ with the exact package pins. The tests cover generated tool construction,
 retry and changed-content conflict, complete mediation, checkpoint
 reattachment, pending re-query, and the shared adapter conformance path.
 
-Version: `0.1.0` (research preview). Next: [Framework adapters](../framework-adapters.md).
+Version: `0.1.1` (research preview). Next: [Framework adapters](../framework-adapters.md).

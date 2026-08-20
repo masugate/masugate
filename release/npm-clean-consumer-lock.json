@@ -8,10 +8,10 @@
       "name": "@masugate/clean-consumer",
       "version": "0.0.0",
       "dependencies": {
-        "@masugate/adapter-core": "file:__MASUGATE_RELEASE_NPM__/masugate-adapter-core-0.1.0.tgz",
-        "@masugate/client": "file:__MASUGATE_RELEASE_NPM__/masugate-client-0.1.0.tgz",
-        "@masugate/mcp-gateway": "file:__MASUGATE_RELEASE_NPM__/masugate-mcp-gateway-0.1.0.tgz",
-        "@masugate/openclaw": "file:__MASUGATE_RELEASE_NPM__/masugate-openclaw-0.1.0.tgz",
+        "@masugate/adapter-core": "file:__MASUGATE_RELEASE_NPM__/masugate-adapter-core-0.1.1.tgz",
+        "@masugate/client": "file:__MASUGATE_RELEASE_NPM__/masugate-client-0.1.1.tgz",
+        "@masugate/mcp-gateway": "file:__MASUGATE_RELEASE_NPM__/masugate-mcp-gateway-0.1.1.tgz",
+        "@masugate/openclaw": "file:__MASUGATE_RELEASE_NPM__/masugate-openclaw-0.1.1.tgz",
         "openclaw": "2026.7.1"
       }
     },
@@ -92,20 +92,20 @@
       }
     },
     "node_modules/@masugate/adapter-core": {
-      "version": "0.1.0",
-      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-adapter-core-0.1.0.tgz",
+      "version": "0.1.1",
+      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-adapter-core-0.1.1.tgz",
       "integrity": "sha512-meJuYEjGKnX63Ls2cv+bTKfH6768xDXx9pB9QQFxk3K1QFO6Fx8a840nQ0YWOKgpdBmvjmT2HoTmofTC9zgU3g==",
       "license": "Apache-2.0",
       "dependencies": {
-        "@masugate/client": "^0.1.0"
+        "@masugate/client": "^0.1.1"
       },
       "engines": {
         "node": ">=20.0.0"
       }
     },
     "node_modules/@masugate/client": {
-      "version": "0.1.0",
-      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-client-0.1.0.tgz",
+      "version": "0.1.1",
+      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-client-0.1.1.tgz",
       "integrity": "sha512-AofB/0HFrUlOjN1EVh2tocKcEAQwN/LxVYlva/ato+Vr9lVRZXASbDxOvBK9VNsR3fFD4/wICsEx7PyR5oMlWw==",
       "license": "Apache-2.0",
       "engines": {
@@ -113,13 +113,13 @@
       }
     },
     "node_modules/@masugate/mcp-gateway": {
-      "version": "0.1.0",
-      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-mcp-gateway-0.1.0.tgz",
+      "version": "0.1.1",
+      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-mcp-gateway-0.1.1.tgz",
       "integrity": "sha512-3R+yM/d0oExFjCf//O/BqxaeXL6fGXnada96dlPabjXLk4zyjJlN4Pi8oKCOlVYl0hhpC5X9QAl3PYQLGQkclA==",
       "license": "Apache-2.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
-        "@masugate/client": "0.1.0",
+        "@masugate/client": "0.1.1",
         "jsonpath-plus": "10.3.0",
         "yaml": "2.8.3",
         "zod": "3.25.76"
@@ -132,8 +132,8 @@
       }
     },
     "node_modules/@masugate/openclaw": {
-      "version": "0.1.0",
-      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-openclaw-0.1.0.tgz",
+      "version": "0.1.1",
+      "resolved": "file:__MASUGATE_RELEASE_NPM__/masugate-openclaw-0.1.1.tgz",
       "integrity": "sha512-qLzS91W1ZInDrFbzyBoB3Qs1zvk9Iwr6nYYRv6LQTGKqo45GeJNn+QRwI6TzMhjeAdWjjiC7GbRftCY5ZCeHzw==",
       "bundleDependencies": [
         "@masugate/adapter-core",
@@ -142,8 +142,8 @@
       ],
       "license": "Apache-2.0",
       "dependencies": {
-        "@masugate/adapter-core": "0.1.0",
-        "@masugate/client": "0.1.0",
+        "@masugate/adapter-core": "0.1.1",
+        "@masugate/client": "0.1.1",
         "typebox": "1.3.3"
       },
       "engines": {
@@ -159,18 +159,18 @@
       }
     },
     "node_modules/@masugate/openclaw/node_modules/@masugate/adapter-core": {
-      "version": "0.1.0",
+      "version": "0.1.1",
       "inBundle": true,
       "license": "Apache-2.0",
       "dependencies": {
-        "@masugate/client": "^0.1.0"
+        "@masugate/client": "^0.1.1"
       },
       "engines": {
         "node": ">=20.0.0"
       }
     },
     "node_modules/@masugate/openclaw/node_modules/@masugate/client": {
-      "version": "0.1.0",
+      "version": "0.1.1",
       "inBundle": true,
       "license": "Apache-2.0",
       "engines": {
@@ -2688,7 +2688,7 @@
         "node": "4.x || >=6.0.0"
       },
       "peerDependencies": {
-        "encoding": "^0.1.0"
+        "encoding": "^0.1.1"
       },
       "peerDependenciesMeta": {
         "encoding": {

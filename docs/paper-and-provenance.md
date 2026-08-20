@@ -27,4 +27,4 @@ Citation metadata is in [`CITATION.cff`](../CITATION.cff). See the
 repository-root [provenance note](../PROVENANCE.md) and
 [trademark policy](../TRADEMARKS.md).
 
-Version: `0.1.0` (research preview). Next: [Artifact evaluation](artifact-evaluation.md).
+Version: `0.1.1` (research preview). Next: [Artifact evaluation](artifact-evaluation.md).

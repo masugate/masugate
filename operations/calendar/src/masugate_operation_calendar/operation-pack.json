@@ -1,7 +1,7 @@
 {
   "contract_version": "masugate.operation-pack.v1",
   "id": "masugate.operation.calendar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "compatibility": {
     "route_manifest": "masugate.governed-route-manifest.v2",
     "connector_contract": "masugate.connector.v1"

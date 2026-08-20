@@ -1,6 +1,6 @@
 {
   "schema_version": "masugate.claim-evidence-ledger/v1",
-  "release_id": "masugate-openclaw-reference/0.1.0",
+  "release_id": "masugate-openclaw-reference/0.1.1",
   "release_status": "research-preview",
   "public_surfaces": [
     {"path": "README.md", "category": "project"},
@@ -28,6 +28,7 @@
     {"path": "docs/framework-adapters.md", "category": "documentation"},
     {"path": "docs/governed-action-walkthrough.md", "category": "documentation"},
     {"path": "docs/paper-and-provenance.md", "category": "documentation"},
+    {"path": "docs/pss-v0.1.1-correction.md", "category": "documentation"},
     {"path": "docs/protected-worker.md", "category": "documentation"},
     {"path": "docs/protocol.md", "category": "documentation"},
     {"path": "docs/reproduction.md", "category": "documentation"},
@@ -93,21 +94,21 @@
   "claims": [
     {
       "id": "PSS-DECLARED-STATE",
-      "statement": "Governed terminal histories are policy-state serializable over declared policy state.",
+      "statement": "Governed histories admit a replayable PSS witness over their declared policy state.",
       "premises": [
-        "Every policy-relevant state transition is represented by a conforming provider and remains inside its coordination domain.",
-        "The published complete-mediation profile remains enabled for the named protected resources."
+        "Every policy-relevant transition, including an observable reservation, is represented by a conforming provider and remains inside its coordination domain.",
+        "The provider retains certified policy inputs sufficient to replay terminal allow and deny decisions at the witness position, and the published complete-mediation profile remains enabled for the named protected resources."
       ],
       "evidence": [
         {
           "gate": "pytest tests/test_pss.py",
-          "result": "The checker accepts legal serializations and rejects stale-authorization histories and mutant checkers.",
-          "paths": ["tests/test_pss.py"]
+          "result": "The corrected checker and bounded exhaustive oracle agree on 30,000 deterministic baseline-, effect-read-, and validator-bearing histories under both real-time modes while accepting legal serializations and rejecting write skew, stale decisions, malformed version chains, and historical checker mutants.",
+          "paths": ["tests/test_pss.py", "src/masugate/pss/oracle.py"]
         },
         {
           "gate": "pytest -m reference_demo_demo_live tests/test_reference_demo_reference_demos.py",
-          "result": "The clean-artifact Race and procurement workloads retain replayable governed PSS histories.",
-          "paths": ["tests/test_reference_demo_reference_demos.py"]
+          "result": "The clean-artifact Race and procurement workloads retain policy-read values, visible reservation/settlement transitions, and replayable governed PSS histories.",
+          "paths": ["tests/test_reference_demo_reference_demos.py", "src/masugate_openclaw_reference/procurement_workload.py"]
         }
       ]
     },

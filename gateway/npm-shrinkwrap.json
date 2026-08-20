@@ -1,16 +1,16 @@
 {
   "name": "@masugate/mcp-gateway",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@masugate/mcp-gateway",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "license": "Apache-2.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
-        "@masugate/client": "0.1.0",
+        "@masugate/client": "0.1.1",
         "jsonpath-plus": "10.3.0",
         "yaml": "2.8.3",
         "zod": "3.25.76"
@@ -101,7 +101,7 @@
       }
     },
     "node_modules/@masugate/client": {
-      "version": "0.1.0",
+      "version": "0.1.1",
       "license": "Apache-2.0",
       "engines": {
         "node": ">=20.0.0"

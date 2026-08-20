@@ -27,12 +27,16 @@ async function unusedPort(): Promise<number> {
   return address.port;
 }
 
+const MASUGATED_STARTUP_TIMEOUT_MS = 10_000;
+const MASUGATED_STARTUP_POLL_INTERVAL_MS = 25;
+
 async function waitForMasuGated(baseUrl: string, process: ChildProcess): Promise<void> {
   let stderr = "";
   let startupError: Error | undefined;
   process.stderr?.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
   process.once("error", (error: Error) => { startupError = error; });
-  for (let attempt = 0; attempt < 100; attempt += 1) {
+  const deadline = Date.now() + MASUGATED_STARTUP_TIMEOUT_MS;
+  while (Date.now() < deadline) {
     if (startupError !== undefined) {
       throw new Error(`could not start masugated fixture: ${startupError.message}`);
     }
@@ -43,9 +47,12 @@ async function waitForMasuGated(baseUrl: string, process: ChildProcess): Promise
     } catch {
       // The TCP listener is still starting.
     }
-    await new Promise((resolve) => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, MASUGATED_STARTUP_POLL_INTERVAL_MS));
   }
-  throw new Error(`timed out waiting for real masugated fixture: ${stderr}`);
+  throw new Error(
+    `timed out waiting ${MASUGATED_STARTUP_TIMEOUT_MS}ms for real masugated fixture: ` +
+      (stderr.trim() || "<no stderr>"),
+  );
 }
 
 async function stop(process: ChildProcess): Promise<void> {

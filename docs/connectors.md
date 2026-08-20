@@ -36,4 +36,4 @@ evidence. Add a package-local test plus a conformance case that exercises the
 installed entry point. See [Extending MasuGate](extending-masugate.md) for the
 repository-level sequence.
 
-Version: `0.1.0` (research preview). Next: [Testing](testing.md).
+Version: `0.1.1` (research preview). Next: [Testing](testing.md).

@@ -3,7 +3,7 @@
 **Audience:** readers, researchers, and artifact reviewers. Start with
 [Concepts](concepts.md) and use [Artifact evaluation](artifact-evaluation.md)
 to assess the required evidence. **Boundary:** this page summarizes the
-`0.1.0` research-preview claim ledger. It does not declare a named
+`0.1.1` research-preview claim ledger. It does not declare a named
 gate passed, a deployment production-ready, or an external service validated.
 
 The machine-readable
@@ -18,7 +18,7 @@ optional live-service check does not replace a named gate.
 
 | Claim | Statement | Premises and required evidence |
 | --- | --- | --- |
-| `PSS-DECLARED-STATE` | Governed terminal histories are policy-state serializable over declared policy state. | Policy-relevant transitions stay in conforming providers and coordination domains, with the complete-mediation profile enabled. Required gates: `pytest tests/test_pss.py` and the clean-artifact PSS workload gate. |
+| `PSS-DECLARED-STATE` | Governed histories admit a replayable PSS witness over declared policy state. | Policy-relevant transitions, including observable reservations, stay in conforming providers and coordination domains; complete mediation is enabled; and the provider retains evidence sufficient to replay terminal policy decisions. Required gates: `pytest tests/test_pss.py`, the bounded oracle cross-check, provider decision replay, and the clean-artifact PSS workload gate. |
 | `TRUSTED-TOOL-IDENTITY` | The pinned OpenClaw adapter derives governed-tool identity from trusted host context and returns the MasuGate-owned result without a second native effect. | The exact host contract and allowlisted tool profile are used; model-controlled fields are not authority. Required gates: `npm test --workspace @masugate/openclaw` and `pytest tests/test_openclaw_spend_integration.py`. |
 | `COMPLETE-MEDIATION-PROFILE` | The reference profile blocks tested direct paths to its named protected resources. | Administrators retain the checked-in sandbox, network, credential, mount, and tool restrictions. The boundary is the named resources and tested escape paths, not every host topology. Required gates: `pytest -m containment_live tests/test_openclaw_reference_containment_live.py` and `python scripts/verify-reference-containment.py`. |
 | `DURABLE-APPROVAL-RECOVERY` | The bounded reference purchase preserves or revalidates approval authority and converges through tested restart boundaries without duplicate connector effects. | The connector retains idempotency, status-query, and fencing behavior; outcome-unknown work remains visible for reconciliation. Required gates: the spend-reference acceptance, Gateway crash-matrix, and clean-artifact recovery gates named in the ledger. |
@@ -62,4 +62,4 @@ See [Expected results](expected-results.md) for command status meanings and
 [Paper and provenance](paper-and-provenance.md) for the research-preview and
 release boundary.
 
-Version: `0.1.0` (research preview). Next: [Artifact evaluation](artifact-evaluation.md).
+Version: `0.1.1` (research preview). Next: [Artifact evaluation](artifact-evaluation.md).

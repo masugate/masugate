@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "masugate-openclaw-reference"
-version = "0.1.0"
+version = "0.1.1"
 description = "Bounded, governed OpenClaw reference deployment for MasuGate"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 
 dependencies = [
-    "masugate==0.1.0",
-    "masugate-client==0.1.0",
+    "masugate==0.1.1",
+    "masugate-client==0.1.1",
 ]
 
 [project.urls]

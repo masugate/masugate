@@ -75,4 +75,4 @@ not provide a production deployment or authorize an external connector effect.
 Remove only the dedicated `/tmp/masugate-connector-worker` directory after
 review.
 
-Version: `0.1.0` (research preview). Next: [Reproduction](reproduction.md).
+Version: `0.1.1` (research preview). Next: [Reproduction](reproduction.md).

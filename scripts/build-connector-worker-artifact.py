@@ -229,7 +229,7 @@ matches = tuple(
     for entry in metadata.entry_points(group="masugate.connector", name="filesystem")
     if entry.dist is not None
     and entry.dist.metadata.get("Name") == "masugate-connector-filesystem"
-    and entry.dist.version == "0.1.0"
+    and entry.dist.version == "0.1.1"
 )
 if len(matches) != 1:
     raise SystemExit("expected one filesystem connector entry point")
@@ -272,7 +272,7 @@ print(json.dumps({
         "connector_id": "filesystem-v1",
         "entry_point": "filesystem",
         "package_id": "masugate-connector-filesystem",
-        "package_version": "0.1.0",
+        "package_version": "0.1.1",
     }
     if result != expected:
         raise ConnectorWorkerArtifactError("installed connector probe has an unexpected result")
@@ -302,7 +302,7 @@ def _tag(release_descriptor: Mapping[str, object]) -> str:
         char not in "0123456789abcdef" for char in manifest_sha256
     ):
         raise ConnectorWorkerArtifactError("release manifest SHA-256 is malformed")
-    return f"masugate-connector-worker:0.1.0-{manifest_sha256[:16]}"
+    return f"masugate-connector-worker:0.1.1-{manifest_sha256[:16]}"
 
 
 def _image_id(docker: str, tag: str, environment: Mapping[str, str]) -> str:
@@ -580,7 +580,7 @@ def _verify(
         "connector_id": "filesystem-v1",
         "entry_point": "filesystem",
         "package_id": "masugate-connector-filesystem",
-        "package_version": "0.1.0",
+        "package_version": "0.1.1",
     }
     if artifact.get("installed_connector") != expected_connector:
         raise ConnectorWorkerArtifactError(

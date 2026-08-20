@@ -1,6 +1,6 @@
 {
   "name": "@masugate/adapter-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-neutral governed tool runtime for MasuGate adapters",
   "license": "Apache-2.0",
   "homepage": "https://github.com/masugate/masugate",
@@ -28,7 +28,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@masugate/client": "^0.1.0"
+    "@masugate/client": "^0.1.1"
   },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",

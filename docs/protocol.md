@@ -37,4 +37,4 @@ client parsers are in
 [`clients/python/src/masugate_client/`](../clients/python/src/masugate_client/).
 For the full execution path, read the [governed action walkthrough](governed-action-walkthrough.md).
 
-Version: `0.1.0` (research preview). Next: [Connectors](connectors.md).
+Version: `0.1.1` (research preview). Next: [Connectors](connectors.md).

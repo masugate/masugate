@@ -27,4 +27,4 @@ conformance pass. Do not interpret a descriptor check as a successful live
 effect. The [artifact evaluation guide](artifact-evaluation.md) explains what
 each tier can and cannot establish.
 
-Version: `0.1.0` (research preview). Next: [Troubleshooting](troubleshooting.md).
+Version: `0.1.1` (research preview). Next: [Troubleshooting](troubleshooting.md).

@@ -20,7 +20,7 @@ import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib import resources
-from typing import cast
+from typing import Literal, cast
 
 import httpx
 import psycopg
@@ -29,7 +29,8 @@ from masugate_client import canonical_adapter_envelope, create_adapter_invocatio
 from masugate.contracts import ProviderIdentity
 from masugate.protected_execution import PolicyBinding, ProtectedExecutionBinding
 from masugate.providers import HttpReferencePurchaseApi
-from masugate.pss import History, Operation, ScopeAccess, check_pss
+from masugate.pss import History, Operation, ScopeAccess, TransitionKind, check_pss
+from masugate.pss.model import ScopeValue
 from masugate_openclaw_reference.audit_validation import (
     AuditValidationError,
     SpendAuditExpectation,
@@ -37,6 +38,7 @@ from masugate_openclaw_reference.audit_validation import (
     validate_denied_spend_audit,
     validate_spend_authorization_anchor,
 )
+from masugate_openclaw_reference.procurement_workload import REFERENCE_SPEND_DECISION_VALIDATOR
 
 _EVIDENCE_SCHEMA = "masugate.release_verification-reference-release-evidence/v1"
 _MASUGATED_URL = "http://127.0.0.1:8000"
@@ -609,8 +611,14 @@ async def run_concurrency_addon() -> dict[str, object]:
     if (
         governed.get("budget_valid") is not True
         or governed_pss.get("valid") is not True
+        or governed_pss.get("decision_validator_supplied") is not True
+        or governed_pss.get("decision_semantics_checked") is not True
+        or governed_pss.get("inconclusive") is not False
         or weak.get("stale_authorization") is not True
         or weak_pss.get("valid") is not False
+        or weak_pss.get("decision_validator_supplied") is not True
+        or weak_pss.get("decision_semantics_checked") is not False
+        or weak_pss.get("inconclusive") is not False
     ):
         raise ReleaseVerificationReleaseError(
             "concurrent E4 add-on did not preserve its expected asymmetry"
@@ -1008,11 +1016,23 @@ def _sha256(value: object, label: str) -> str:
     return text
 
 
+def _scope_value(value: object, label: str) -> ScopeValue:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        if type(value) is float and not math.isfinite(value):
+            raise ReleaseVerificationReleaseError(f"{label} must be finite")
+        return value
+    raise ReleaseVerificationReleaseError(f"{label} must be a JSON scalar")
+
+
+def _optional_string(value: object, label: str) -> str | None:
+    return None if value is None else _string(value, label)
+
+
 def _scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
     accesses: list[ScopeAccess] = []
     for index, raw in enumerate(_list(value, label)):
         access = _mapping(raw, f"{label}[{index}]")
-        if set(access) != {"scope", "version"}:
+        if set(access) not in ({"scope", "version"}, {"scope", "version", "value"}):
             raise ReleaseVerificationReleaseError(
                 f"{label}[{index}] has an incompatible scope-access shape"
             )
@@ -1020,11 +1040,23 @@ def _scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
         version = _integer(access.get("version"), f"{label}[{index}].version")
         if version < 0:
             raise ReleaseVerificationReleaseError(f"{label}[{index}] has a negative version")
-        accesses.append(ScopeAccess(scope=scope, version=version))
+        accesses.append(
+            ScopeAccess(
+                scope=scope,
+                version=version,
+                value=_scope_value(access.get("value"), f"{label}[{index}].value"),
+            )
+        )
     return tuple(accesses)
 
 
-def _validate_concurrent_history(value: object, label: str, *, kind: str) -> History:
+def _validate_concurrent_history(
+    value: object,
+    label: str,
+    *,
+    kind: str,
+    initial_policy_state: object,
+) -> History:
     raw_operations = _list(value, label)
     expected_length = 3 if kind == "governed" else 2
     if len(raw_operations) != expected_length:
@@ -1034,7 +1066,7 @@ def _validate_concurrent_history(value: object, label: str, *, kind: str) -> His
     operations: list[Operation] = []
     event_kinds: list[str] = []
     operation_ids: set[str] = set()
-    expected_fields = {
+    required_fields = {
         "operation_id",
         "causal_operation_id",
         "event_kind",
@@ -1045,9 +1077,16 @@ def _validate_concurrent_history(value: object, label: str, *, kind: str) -> His
         "effect_reads",
         "effect_writes",
     }
+    optional_fields = {
+        "decision",
+        "policy_id",
+        "policy_version",
+        "evaluation_time",
+        "evaluation_input_digest",
+    }
     for index, raw in enumerate(raw_operations):
         operation = _mapping(raw, f"{label}[{index}]")
-        if set(operation) != expected_fields:
+        if not required_fields <= set(operation) <= required_fields | optional_fields:
             raise ReleaseVerificationReleaseError(
                 f"{label}[{index}] has an incompatible transition shape"
             )
@@ -1068,6 +1107,11 @@ def _validate_concurrent_history(value: object, label: str, *, kind: str) -> His
         committed = operation.get("committed")
         if type(committed) is not bool:
             raise ReleaseVerificationReleaseError(f"{label}[{index}].committed must be boolean")
+        decision = _optional_string(operation.get("decision"), f"{label}[{index}].decision")
+        if decision not in {None, "allow", "deny"}:
+            raise ReleaseVerificationReleaseError(
+                f"{label}[{index}].decision must be allow or deny"
+            )
         policy_reads = _scope_accesses(
             operation.get("policy_reads"), f"{label}[{index}].policy_reads"
         )
@@ -1133,6 +1177,22 @@ def _validate_concurrent_history(value: object, label: str, *, kind: str) -> His
                 policy_reads=policy_reads,
                 effect_reads=effect_reads,
                 effect_writes=effect_writes,
+                decision=cast(Literal["allow", "deny"] | None, decision),
+                policy_id=_optional_string(
+                    operation.get("policy_id"), f"{label}[{index}].policy_id"
+                ),
+                policy_version=_optional_string(
+                    operation.get("policy_version"), f"{label}[{index}].policy_version"
+                ),
+                evaluation_time=_optional_string(
+                    operation.get("evaluation_time"), f"{label}[{index}].evaluation_time"
+                ),
+                evaluation_input_digest=_optional_string(
+                    operation.get("evaluation_input_digest"),
+                    f"{label}[{index}].evaluation_input_digest",
+                ),
+                causal_operation_id=causal_operation_id,
+                transition_kind=cast(TransitionKind, event_kind),
             )
         )
     expected_kinds = (
@@ -1149,7 +1209,12 @@ def _validate_concurrent_history(value: object, label: str, *, kind: str) -> His
         raise ReleaseVerificationReleaseError(
             f"{label} settlement begins before both admissions finish"
         )
-    return History(tuple(operations))
+    initial_versions = _scope_accesses(initial_policy_state, f"{label}.initial_policy_state")
+    if not initial_versions:
+        raise ReleaseVerificationReleaseError(
+            f"{label} must retain an initial policy-state baseline"
+        )
+    return History(tuple(operations), initial_versions=initial_versions)
 
 
 def _audit_scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
@@ -1162,7 +1227,13 @@ def _audit_scope_accesses(value: object, label: str) -> tuple[ScopeAccess, ...]:
         version = _integer(read.get("version"), f"{label}[{index}].version")
         if version < 0:
             raise ReleaseVerificationReleaseError(f"{label}[{index}] has a negative version")
-        accesses.append(ScopeAccess(scope=scope, version=version))
+        accesses.append(
+            ScopeAccess(
+                scope=scope,
+                version=version,
+                value=_scope_value(read.get("value"), f"{label}[{index}].value"),
+            )
+        )
     return tuple(accesses)
 
 
@@ -1193,6 +1264,7 @@ def _validate_committed_audit_chain_legacy(
     access = ScopeAccess(
         scope=_string(read.get("scope"), f"{label}.view_reads[0].scope"),
         version=version,
+        value=value,
     )
     if (
         version < 0
@@ -1358,7 +1430,7 @@ def _validate_procurement_governance_records(
             != expected_reads
         ):
             raise ReleaseVerificationReleaseError(
-                f"concurrent {label} audit does not bind its replayed request and reads"
+                f"concurrent {label} audit does not bind its replayed request and policy-state read"
             )
         observed_requests.add(key)
     committed_key = _string(
@@ -1464,6 +1536,7 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         "budget_valid",
         "terminal_statuses",
         "pss",
+        "initial_policy_state",
         "history",
         "final_policy_state",
         "governance_records",
@@ -1475,6 +1548,7 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         "stale_authorization",
         "effect_ledger",
         "pss",
+        "initial_policy_state",
         "history",
     }:
         raise ReleaseVerificationReleaseError(
@@ -1496,15 +1570,27 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
     ]
     raw_governed_history = _list(governed.get("history"), "concurrent governed history")
     governed_history = _validate_concurrent_history(
-        raw_governed_history, "concurrent governed history", kind="governed"
+        raw_governed_history,
+        "concurrent governed history",
+        kind="governed",
+        initial_policy_state=governed.get("initial_policy_state"),
     )
-    governed_verdict = check_pss(governed_history)
+    governed_verdict = check_pss(
+        governed_history,
+        decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR,
+    )
     if (
         governed.get("committed_cents") != 6_000
         or governed.get("budget_valid") is not True
         or sorted(statuses) != ["committed", "denied"]
         or _mapping(governed.get("pss"), "concurrent governed PSS")
-        != {"valid": governed_verdict.pss, "reason": governed_verdict.reason}
+        != {
+            "valid": governed_verdict.pss,
+            "reason": governed_verdict.reason,
+            "decision_validator_supplied": governed_verdict.decision_validator_supplied,
+            "decision_semantics_checked": governed_verdict.decision_semantics_checked,
+            "inconclusive": governed_verdict.inconclusive,
+        }
         or not governed_verdict.pss
     ):
         raise ReleaseVerificationReleaseError("concurrent governed evidence does not replay as PSS")
@@ -1554,16 +1640,28 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
     }:
         raise ReleaseVerificationReleaseError("concurrent weak assumptions are incompatible")
     weak_history = _validate_concurrent_history(
-        weak.get("history"), "concurrent weak history", kind="weak"
+        weak.get("history"),
+        "concurrent weak history",
+        kind="weak",
+        initial_policy_state=weak.get("initial_policy_state"),
     )
-    weak_verdict = check_pss(weak_history)
+    weak_verdict = check_pss(
+        weak_history,
+        decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR,
+    )
     if (
         weak.get("committed_cents") != 12_000
         or weak.get("overshoot_cents") != 2_000
         or weak.get("stale_authorization") is not True
         or weak_verdict.pss
         or _mapping(weak.get("pss"), "concurrent weak PSS")
-        != {"valid": weak_verdict.pss, "reason": weak_verdict.reason}
+        != {
+            "valid": weak_verdict.pss,
+            "reason": weak_verdict.reason,
+            "decision_validator_supplied": weak_verdict.decision_validator_supplied,
+            "decision_semantics_checked": weak_verdict.decision_semantics_checked,
+            "inconclusive": weak_verdict.inconclusive,
+        }
     ):
         raise ReleaseVerificationReleaseError(
             "concurrent weak evidence does not replay as stale authorization"
@@ -1591,11 +1689,15 @@ def _validate_concurrency_addon(value: object, spend_authorization: Mapping[str,
         )
     for operation in weak_history.operations:
         if operation.policy_reads != (
-            ScopeAccess(scope="spend:team:research", version=0),
+            ScopeAccess(scope="spend:team:research", version=0, value=10_000),
         ) or operation.effect_writes != (
             ScopeAccess(
                 scope="spend:team:research",
                 version=cast(int, ledger[operation.op_id]["budget_version"]),
+                value=(
+                    10_000
+                    - 6_000 * cast(int, ledger[operation.op_id]["budget_version"])
+                ),
             ),
         ):
             raise ReleaseVerificationReleaseError(

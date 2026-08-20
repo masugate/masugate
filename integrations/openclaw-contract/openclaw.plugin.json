@@ -2,7 +2,7 @@
   "id": "masugate-contract-probe",
   "name": "MasuGate Contract Probe",
   "description": "Executable reference platform probe for the pinned MasuGate-owned OpenClaw tool contract.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "contracts": {
     "tools": ["masugate_contract_probe"]
   },

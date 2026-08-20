@@ -9,4 +9,4 @@ them privately at
 [masugate.governance@gmail.com](mailto:masugate.governance@gmail.com).
 Security reports belong under the [security policy](SECURITY.md).
 
-Version: `0.1.0` (research preview). Next: [Trademark policy](TRADEMARKS.md).
+Version: `0.1.1` (research preview). Next: [Trademark policy](TRADEMARKS.md).

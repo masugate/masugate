@@ -1,6 +1,6 @@
 # Release engineering controls
 
-**Audience:** release reviewers. **Supported boundary:** the `0.1.0`
+**Audience:** release reviewers. **Supported boundary:** the `0.1.1`
 research-preview release only. The source repository is public and its bounded
 source-control workflow is active. This document describes reproducible local
 verification controls; it does not authorize package or container publication,
@@ -121,4 +121,4 @@ output directory. Those records support review only. They do not authorize
 package or container publication, registry access, a trusted publisher, or a
 hosted artifact release.
 
-Version: `0.1.0` (research preview). Next: [Protected connector worker](protected-worker.md).
+Version: `0.1.1` (research preview). Next: [Protected connector worker](protected-worker.md).

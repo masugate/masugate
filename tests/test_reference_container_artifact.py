@@ -35,7 +35,7 @@ def test_saved_archive_rejects_missing_referenced_layer(tmp_path: Path) -> None:
     builder = _container_builder()
     config = json.dumps({"rootfs": {"diff_ids": ["sha256:" + "0" * 64]}}).encode("utf-8")
     archive = tmp_path / "images.tar"
-    tag = "masugate-reference-artifact/reference:0.1.0-ffffffffffffffff"
+    tag = "masugate-reference-artifact/reference:0.1.1-ffffffffffffffff"
     missing_layer = "blobs/sha256/" + "0" * 64
     manifest = [{"Config": "blobs/sha256/config", "RepoTags": [tag], "Layers": [missing_layer]}]
     with tarfile.open(archive, "w") as bundle:
@@ -52,7 +52,7 @@ def test_saved_archive_accepts_legacy_layer_tar_layout(tmp_path: Path) -> None:
     digest = hashlib.sha256(layer).hexdigest()
     config = json.dumps({"rootfs": {"diff_ids": ["sha256:" + digest]}}).encode("utf-8")
     archive = tmp_path / "images.tar"
-    tag = "masugate-reference-artifact/reference:0.1.0-test"
+    tag = "masugate-reference-artifact/reference:0.1.1-test"
     manifest = [{"Config": "config.json", "RepoTags": [tag], "Layers": ["legacy/layer.tar"]}]
     with tarfile.open(archive, "w") as bundle:
         _add_bytes(bundle, "manifest.json", json.dumps(manifest).encode("utf-8"))
@@ -174,7 +174,7 @@ def test_verify_loads_archive_checks_identity_and_cleans_tags(
 ) -> None:
     builder = _container_builder()
     monkeypatch.setenv("MASUGATE_CONTAINER_ARTIFACT_TMPDIR", str(tmp_path))
-    tag = "masugate-reference-artifact/reference:0.1.0-ffffffffffffffff"
+    tag = "masugate-reference-artifact/reference:0.1.1-ffffffffffffffff"
     layer = b"layer"
     digest = hashlib.sha256(layer).hexdigest()
     config = json.dumps({"rootfs": {"diff_ids": ["sha256:" + digest]}}).encode("utf-8")

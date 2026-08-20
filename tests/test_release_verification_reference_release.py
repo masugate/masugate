@@ -45,7 +45,7 @@ def _spend_authorization_fixture() -> dict[str, object]:
 def _release_descriptor_fixture() -> dict[str, object]:
     return {
         "schema_version": "masugate.reference_demo-release-descriptor/v1",
-        "release_id": "masugate-openclaw-reference/0.1.0",
+        "release_id": "masugate-openclaw-reference/0.1.1",
         "source_revision": "a" * 40,
         "staging_realization_revision": "b" * 40,
         "release_manifest_sha256": "b" * 64,
@@ -306,6 +306,7 @@ def _governance_record(
 
 def _concurrency_addon() -> dict[str, object]:
     scope = "spend:team:research"
+    initial_policy_state = [{"scope": scope, "version": 0, "value": 10_000}]
     governed_history = [
         {
             "operation_id": "committed:reservation",
@@ -314,9 +315,9 @@ def _concurrency_addon() -> dict[str, object]:
             "begin_ns": 1,
             "terminal_ns": 3,
             "committed": True,
-            "policy_reads": [{"scope": scope, "version": 0}],
+            "policy_reads": [{"scope": scope, "version": 0, "value": 10_000}],
             "effect_reads": [],
-            "effect_writes": [{"scope": scope, "version": 1}],
+            "effect_writes": [{"scope": scope, "version": 1, "value": 4_000}],
         },
         {
             "operation_id": "denied",
@@ -325,7 +326,7 @@ def _concurrency_addon() -> dict[str, object]:
             "begin_ns": 1,
             "terminal_ns": 4,
             "committed": False,
-            "policy_reads": [{"scope": scope, "version": 1}],
+            "policy_reads": [{"scope": scope, "version": 1, "value": 4_000}],
             "effect_reads": [],
             "effect_writes": [],
         },
@@ -337,8 +338,8 @@ def _concurrency_addon() -> dict[str, object]:
             "terminal_ns": 6,
             "committed": True,
             "policy_reads": [],
-            "effect_reads": [{"scope": scope, "version": 1}],
-            "effect_writes": [{"scope": scope, "version": 2}],
+            "effect_reads": [{"scope": scope, "version": 1, "value": 4_000}],
+            "effect_writes": [{"scope": scope, "version": 2, "value": 4_000}],
         },
     ]
     weak_history = [
@@ -349,9 +350,9 @@ def _concurrency_addon() -> dict[str, object]:
             "begin_ns": 1,
             "terminal_ns": 3,
             "committed": True,
-            "policy_reads": [{"scope": scope, "version": 0}],
+            "policy_reads": [{"scope": scope, "version": 0, "value": 10_000}],
             "effect_reads": [],
-            "effect_writes": [{"scope": scope, "version": 1}],
+            "effect_writes": [{"scope": scope, "version": 1, "value": 4_000}],
         },
         {
             "operation_id": "weak-beta",
@@ -360,20 +361,28 @@ def _concurrency_addon() -> dict[str, object]:
             "begin_ns": 1,
             "terminal_ns": 4,
             "committed": True,
-            "policy_reads": [{"scope": scope, "version": 0}],
+            "policy_reads": [{"scope": scope, "version": 0, "value": 10_000}],
             "effect_reads": [],
-            "effect_writes": [{"scope": scope, "version": 2}],
+            "effect_writes": [{"scope": scope, "version": 2, "value": -2_000}],
         },
     ]
     governed_verdict = check_pss(
         release_verification_release._validate_concurrent_history(
-            governed_history, "fixture governed history", kind="governed"
-        )
+            governed_history,
+            "fixture governed history",
+            kind="governed",
+            initial_policy_state=initial_policy_state,
+        ),
+        decision_validator=release_verification_release.REFERENCE_SPEND_DECISION_VALIDATOR,
     )
     weak_verdict = check_pss(
         release_verification_release._validate_concurrent_history(
-            weak_history, "fixture weak history", kind="weak"
-        )
+            weak_history,
+            "fixture weak history",
+            kind="weak",
+            initial_policy_state=initial_policy_state,
+        ),
+        decision_validator=release_verification_release.REFERENCE_SPEND_DECISION_VALIDATOR,
     )
     governed = {
         "kind": "governed-product-coordination",
@@ -389,7 +398,14 @@ def _concurrency_addon() -> dict[str, object]:
         "committed_cents": 6_000,
         "budget_valid": True,
         "terminal_statuses": ["committed", "denied"],
-        "pss": {"valid": governed_verdict.pss, "reason": governed_verdict.reason},
+        "pss": {
+            "valid": governed_verdict.pss,
+            "reason": governed_verdict.reason,
+            "decision_validator_supplied": governed_verdict.decision_validator_supplied,
+            "decision_semantics_checked": governed_verdict.decision_semantics_checked,
+            "inconclusive": governed_verdict.inconclusive,
+        },
+        "initial_policy_state": initial_policy_state,
         "history": governed_history,
         "final_policy_state": {
             "scope": scope,
@@ -441,7 +457,14 @@ def _concurrency_addon() -> dict[str, object]:
             {"operation_id": "weak-alpha", "amount_cents": 6_000, "budget_version": 1},
             {"operation_id": "weak-beta", "amount_cents": 6_000, "budget_version": 2},
         ],
-        "pss": {"valid": weak_verdict.pss, "reason": weak_verdict.reason},
+        "pss": {
+            "valid": weak_verdict.pss,
+            "reason": weak_verdict.reason,
+            "decision_validator_supplied": weak_verdict.decision_validator_supplied,
+            "decision_semantics_checked": weak_verdict.decision_semantics_checked,
+            "inconclusive": weak_verdict.inconclusive,
+        },
+        "initial_policy_state": initial_policy_state,
         "history": weak_history,
     }
     return {
@@ -455,6 +478,24 @@ def _concurrency_addon() -> dict[str, object]:
             "governed_pss_valid": governed["pss"],
         },
     }
+
+
+def test_release_verifier_rejects_inconclusive_concurrent_claim() -> None:
+    evidence = _concurrency_addon()
+    governed = evidence["governed"]
+    assert isinstance(governed, dict)
+    pss = governed["pss"]
+    assert isinstance(pss, dict)
+    pss["inconclusive"] = True
+
+    with pytest.raises(
+        release_verification_release.ReleaseVerificationReleaseError,
+        match="governed evidence does not replay as PSS",
+    ):
+        release_verification_release._validate_concurrency_addon(
+            evidence,
+            _spend_authorization_fixture(),
+        )
 
 
 def _valid_evidence() -> dict[str, object]:
@@ -813,14 +854,14 @@ def test_release_gate_allows_bundled_masugate_dependencies_but_rejects_openclaw_
     )
     tarballs = context / "artifacts" / "npm"
     tarballs.mkdir(parents=True)
-    tarball = tarballs / "masugate-openclaw-0.1.0.tgz"
+    tarball = tarballs / "masugate-openclaw-0.1.1.tgz"
 
     with tarfile.open(tarball, "w:gz") as archive:
         archive.add(package, arcname="package")
     artifact, files = module._adapter_artifact(context)
     assert artifact["name"] == "@masugate/openclaw"
     assert [name for name, _ in files] == [
-        "artifacts/npm/masugate-openclaw-0.1.0.tgz!package/dist/src/plugin.js"
+        "artifacts/npm/masugate-openclaw-0.1.1.tgz!package/dist/src/plugin.js"
     ]
 
     (package / "node_modules" / "openclaw").mkdir()
@@ -1074,6 +1115,18 @@ def test_release_evidence_replays_concurrency_and_e6_transitions() -> None:
     with pytest.raises(
         release_verification_release.ReleaseVerificationReleaseError,
         match="weak evidence does not replay",
+    ):
+        release_verification_release.validate_release_evidence(evidence)
+
+    evidence = _valid_evidence()
+    concurrent = cast(dict[str, object], evidence["adversarial"])["concurrent_addon"]
+    governed = cast(dict[str, object], cast(dict[str, object], concurrent)["governed"])
+    history = cast(list[dict[str, object]], governed["history"])
+    reads = cast(list[dict[str, object]], history[1]["policy_reads"])
+    reads[0]["value"] = 10_000
+    with pytest.raises(
+        release_verification_release.ReleaseVerificationReleaseError,
+        match="concurrent governed evidence does not replay as PSS",
     ):
         release_verification_release.validate_release_evidence(evidence)
 

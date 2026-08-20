@@ -2,7 +2,7 @@
   "id": "masugate",
   "name": "MasuGate",
   "description": "MasuGate-owned governed actions with trusted OpenClaw fleet identity.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "contracts": {
     "tools": ["masugate_governed_action", "masugate_resume_pending"]
   },

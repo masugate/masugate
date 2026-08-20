@@ -20,13 +20,14 @@ import time
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import cast
+from typing import Literal, cast
 
 import httpx
 import psycopg
 from masugate_client import canonical_adapter_envelope, create_adapter_invocation
 
-from masugate.pss import History, Operation, ScopeAccess, check_pss
+from masugate.pss import DecisionValidator, History, Operation, ScopeAccess, check_pss
+from masugate.pss.checker import PSSVerdict
 
 _MASUGATED_URL = "http://127.0.0.1:8000"
 _ALPHA_TOKEN = "reference-containment-reference-token"
@@ -218,8 +219,32 @@ def _policy_reads(audit: Mapping[str, object]) -> tuple[ScopeAccess, ...]:
         ScopeAccess(
             scope=_string(_mapping(read, "audit view_read").get("scope"), "view_read scope"),
             version=_int(_mapping(read, "audit view_read").get("version"), "view_read version"),
+            value=_int(_mapping(read, "audit view_read").get("value"), "view_read value"),
         )
         for read in reads
+    )
+
+
+def _policy_evidence(
+    audit: Mapping[str, object],
+) -> tuple[Literal["allow", "deny"], str, str, str, str]:
+    """Extract replay metadata that binds an audit to its policy decision."""
+
+    decision = _string(
+        _mapping(audit.get("decision"), "audit decision").get("effect"),
+        "audit decision effect",
+    )
+    if decision not in {"allow", "deny"}:
+        raise DemoError("audit decision effect must be allow or deny")
+    policy = _mapping(audit.get("policy"), "audit policy")
+    terminal = _mapping(audit.get("terminal_serialization"), "audit terminal serialization")
+    entitlement = _mapping(audit.get("entitlement"), "audit entitlement")
+    return (
+        cast(Literal["allow", "deny"], decision),
+        _string(policy.get("policy_id"), "audit policy id"),
+        _string(policy.get("policy_version"), "audit policy version"),
+        _string(terminal.get("evaluation_at"), "audit evaluation time"),
+        _string(entitlement.get("authorization_digest"), "audit authorization digest"),
     )
 
 
@@ -232,6 +257,9 @@ def _terminal_history_operation(
     operation_id = _string(audit.get("operation_id"), "audit operation_id")
     policy_reads = _policy_reads(audit)
     committed = audit.get("status") == "committed"
+    decision, policy_id, policy_version, evaluation_time, input_digest = _policy_evidence(audit)
+    if committed != (decision == "allow"):
+        raise DemoError("audit status and terminal decision disagree")
     effect_writes: tuple[ScopeAccess, ...] = ()
     if committed:
         effect = _mapping(audit.get("effect"), "committed audit effect")
@@ -250,44 +278,108 @@ def _terminal_history_operation(
         committed=committed,
         policy_reads=policy_reads,
         effect_writes=effect_writes,
+        decision=decision,
+        policy_id=policy_id,
+        policy_version=policy_version,
+        evaluation_time=evaluation_time,
+        evaluation_input_digest=input_digest,
+        transition_kind="terminal-effect" if committed else "terminal-denial",
     )
 
 
-def _history_payload(
-    history: History,
-    *,
-    event_kinds: Mapping[str, str] | None = None,
-    causal_operation_ids: Mapping[str, str] | None = None,
-) -> list[dict[str, object]]:
-    return [
-        {
+def _scope_access_payload(access: ScopeAccess) -> dict[str, object]:
+    payload: dict[str, object] = {"scope": access.scope, "version": access.version}
+    if access.value is not None:
+        payload["value"] = access.value
+    return payload
+
+
+def _history_payload(history: History) -> list[dict[str, object]]:
+    payloads: list[dict[str, object]] = []
+    for operation in history.operations:
+        payload: dict[str, object] = {
             "operation_id": operation.op_id,
-            "causal_operation_id": (
-                causal_operation_ids.get(operation.op_id, operation.op_id)
-                if causal_operation_ids is not None
-                else operation.op_id
-            ),
-            "event_kind": (
-                event_kinds.get(operation.op_id, "terminal-effect")
-                if event_kinds is not None
-                else "terminal-effect"
-            ),
+            "causal_operation_id": operation.causal_id,
+            "event_kind": operation.kind,
             "begin_ns": operation.begin_ns,
             "terminal_ns": operation.commit_ns,
             "committed": operation.committed,
-            "policy_reads": [
-                {"scope": read.scope, "version": read.version} for read in operation.policy_reads
-            ],
-            "effect_reads": [
-                {"scope": read.scope, "version": read.version} for read in operation.effect_reads
-            ],
-            "effect_writes": [
-                {"scope": write.scope, "version": write.version}
-                for write in operation.effect_writes
-            ],
+            "decision": operation.declared_decision,
+            "policy_reads": [_scope_access_payload(read) for read in operation.policy_reads],
+            "effect_reads": [_scope_access_payload(read) for read in operation.effect_reads],
+            "effect_writes": [_scope_access_payload(write) for write in operation.effect_writes],
         }
-        for operation in history.operations
-    ]
+        for field, value in (
+            ("policy_id", operation.policy_id),
+            ("policy_version", operation.policy_version),
+            ("evaluation_time", operation.evaluation_time),
+            ("evaluation_input_digest", operation.evaluation_input_digest),
+        ):
+            if value is not None:
+                payload[field] = value
+        payloads.append(payload)
+    return payloads
+
+
+def _initial_policy_state_payload(history: History) -> list[dict[str, object]]:
+    """Serialize the retained baseline required for semantic replay."""
+
+    return [_scope_access_payload(access) for access in history.initial_versions]
+
+
+def _pss_payload(verdict: PSSVerdict) -> dict[str, object]:
+    """Preserve validator configuration separately from replay execution."""
+
+    return {
+        "valid": verdict.pss,
+        "reason": verdict.reason,
+        "decision_validator_supplied": verdict.decision_validator_supplied,
+        "decision_semantics_checked": verdict.decision_semantics_checked,
+        "inconclusive": verdict.inconclusive,
+    }
+
+
+def reference_spend_decision_validator(
+    operation: Operation,
+    state: Mapping[str, ScopeAccess],
+) -> str | None:
+    """Replay the fixed spend policy from certified values in this workload.
+
+    This is intentionally provider-specific.  The generic PSS checker proves
+    versioned serialization; this callback also verifies the 6,000-cent
+    capacity decision and the value transition at that serial point.
+    """
+
+    if operation.kind == "terminal-settlement":
+        if len(operation.effect_reads) != 1 or len(operation.effect_writes) != 1:
+            return "settlement must retain one read and one write"
+        read, write = operation.effect_reads[0], operation.effect_writes[0]
+        current = state.get(read.scope)
+        if current is None or read.value != current.value or write.value != current.value:
+            return "settlement does not preserve the reserved available balance"
+        return None
+
+    if len(operation.policy_reads) != 1:
+        return "terminal decision must retain exactly one spend read"
+    read = operation.policy_reads[0]
+    current = state.get(read.scope)
+    if current is None or type(current.value) is not int or read.value != current.value:
+        return "recorded available balance does not match serial policy state"
+    expected = "allow" if current.value >= _RACE_AMOUNT_CENTS else "deny"
+    if operation.declared_decision != expected:
+        return (
+            f"recorded {operation.declared_decision} "
+            f"conflicts with available balance {current.value}"
+        )
+    if operation.committed:
+        if len(operation.effect_writes) != 1:
+            return "allowed spend must retain one policy-state write"
+        if operation.effect_writes[0].value != current.value - _RACE_AMOUNT_CENTS:
+            return "allowed spend writes the wrong available balance"
+    return None
+
+
+REFERENCE_SPEND_DECISION_VALIDATOR: DecisionValidator = reference_spend_decision_validator
 
 
 def _budget_snapshot(team_id: str) -> dict[str, object]:
@@ -357,16 +449,29 @@ def weak_request_time_baseline() -> dict[str, object]:
             begin_ns=begin_ns,
             commit_ns=time.monotonic_ns(),
             committed=True,
-            policy_reads=(ScopeAccess(scope=scope, version=observed_version),),
-            effect_writes=(ScopeAccess(scope=scope, version=produced_version),),
+            decision="allow",
+            policy_reads=(
+                ScopeAccess(scope=scope, version=observed_version, value=observed_available),
+            ),
+            effect_writes=(
+                ScopeAccess(
+                    scope=scope,
+                    version=produced_version,
+                    value=_BUDGET_CENTS - committed_cents,
+                ),
+            ),
+            transition_kind="terminal-effect",
         )
 
     with ThreadPoolExecutor(
         max_workers=2, thread_name_prefix="masugate-reference_demo-weak"
     ) as pool:
         operations = tuple(pool.map(execute, ("weak-alpha", "weak-beta")))
-    history = History(operations=operations)
-    verdict = check_pss(history)
+    history = History(
+        operations=operations,
+        initial_versions=(ScopeAccess(scope=scope, version=0, value=_BUDGET_CENTS),),
+    )
+    verdict = check_pss(history, decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR)
     if verdict.pss:
         raise AssertionError(
             "the intentionally stale request-time baseline unexpectedly passed PSS"
@@ -386,7 +491,8 @@ def weak_request_time_baseline() -> dict[str, object]:
         "overshoot_cents": committed_cents - _BUDGET_CENTS,
         "stale_authorization": True,
         "effect_ledger": effects,
-        "pss": {"valid": verdict.pss, "reason": verdict.reason},
+        "pss": _pss_payload(verdict),
+        "initial_policy_state": _initial_policy_state_payload(history),
         "history": _history_payload(history),
     }
 
@@ -457,13 +563,29 @@ async def governed_procurement_workload() -> dict[str, object]:
         )
     reservation_id = f"{committed_operation_id}:reservation"
     settlement_id = f"{committed_operation_id}:settlement"
+    decision, policy_id, policy_version, evaluation_time, input_digest = _policy_evidence(audits[0])
+    if decision != "allow":
+        raise DemoError("committed procurement audit must retain an allow decision")
+    admitted_available = committed_reads[0].value
+    if type(admitted_available) is not int:
+        raise DemoError("committed procurement audit must retain an integer available balance")
+    reserved_available = admitted_available - _RACE_AMOUNT_CENTS
     reservation = Operation(
         op_id=reservation_id,
         begin_ns=pending[0].begin_ns,
         commit_ns=pending[0].terminal_ns,
         committed=True,
         policy_reads=committed_reads,
-        effect_writes=(ScopeAccess(scope=scope, version=reservation_version),),
+        effect_writes=(
+            ScopeAccess(scope=scope, version=reservation_version, value=reserved_available),
+        ),
+        decision=decision,
+        policy_id=policy_id,
+        policy_version=policy_version,
+        evaluation_time=evaluation_time,
+        evaluation_input_digest=input_digest,
+        causal_operation_id=committed_operation_id,
+        transition_kind="coordination-reservation",
     )
     denial = _terminal_history_operation(
         audits[1],
@@ -475,20 +597,30 @@ async def governed_procurement_workload() -> dict[str, object]:
         begin_ns=resolution.begin_ns,
         commit_ns=resolution.terminal_ns,
         committed=True,
-        effect_reads=(ScopeAccess(scope=scope, version=reservation_version),),
-        effect_writes=(ScopeAccess(scope=scope, version=terminal_version),),
+        effect_reads=(
+            ScopeAccess(scope=scope, version=reservation_version, value=reserved_available),
+        ),
+        effect_writes=(
+            ScopeAccess(scope=scope, version=terminal_version, value=reserved_available),
+        ),
+        decision="allow",
+        policy_id=policy_id,
+        policy_version=policy_version,
+        evaluation_time=evaluation_time,
+        evaluation_input_digest=input_digest,
+        causal_operation_id=committed_operation_id,
+        transition_kind="terminal-settlement",
     )
-    history = History((reservation, denial, settlement))
-    event_kinds = {
-        reservation_id: "coordination-reservation",
-        denial.op_id: "terminal-denial",
-        settlement_id: "terminal-settlement",
-    }
-    causal_operation_ids = {
-        reservation_id: committed_operation_id,
-        denial.op_id: denial.op_id,
-        settlement_id: committed_operation_id,
-    }
+    history = History(
+        (reservation, denial, settlement),
+        initial_versions=(
+            ScopeAccess(
+                scope=scope,
+                version=committed_reads[0].version,
+                value=admitted_available,
+            ),
+        ),
+    )
     if final_policy_state != {
         "scope": scope,
         "version": terminal_version,
@@ -510,7 +642,7 @@ async def governed_procurement_workload() -> dict[str, object]:
         != terminal_version
     ):
         raise DemoError("governed procurement history omits the terminal budget write")
-    verdict = check_pss(history)
+    verdict = check_pss(history, decision_validator=REFERENCE_SPEND_DECISION_VALIDATOR)
     if not verdict.pss:
         raise DemoError(f"governed procurement history failed PSS: {verdict.reason}")
     committed_cents = sum(
@@ -533,12 +665,9 @@ async def governed_procurement_workload() -> dict[str, object]:
         "committed_cents": committed_cents,
         "budget_valid": committed_cents <= _BUDGET_CENTS,
         "terminal_statuses": [cast(str, result["status"]) for result in terminal],
-        "pss": {"valid": verdict.pss, "reason": verdict.reason},
-        "history": _history_payload(
-            history,
-            event_kinds=event_kinds,
-            causal_operation_ids=causal_operation_ids,
-        ),
+        "pss": _pss_payload(verdict),
+        "initial_policy_state": _initial_policy_state_payload(history),
+        "history": _history_payload(history),
         "final_policy_state": final_policy_state,
         "governance_records": audits,
     }

@@ -63,7 +63,7 @@ def _release_descriptor_fixture(runner: Any) -> dict[str, object]:
     }
     return {
         "schema_version": runner._RELEASE_DESCRIPTOR_SCHEMA,
-        "release_id": "masugate-openclaw-reference/0.1.0",
+        "release_id": "masugate-openclaw-reference/0.1.1",
         "source_revision": "a" * 40,
         "staging_realization_revision": "b" * 40,
         "release_manifest_sha256": "4" * 64,
@@ -511,7 +511,16 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                 },
                 "committed_cents": 6_000,
                 "budget_valid": True,
-                "pss": {"valid": True, "reason": "fixture"},
+                "pss": {
+                    "valid": True,
+                    "reason": "fixture",
+                    "decision_validator_supplied": True,
+                    "decision_semantics_checked": True,
+                    "inconclusive": False,
+                },
+                "initial_policy_state": [
+                    {"scope": "spend:team:research", "version": 0, "value": 10_000}
+                ],
                 "terminal_statuses": ["committed", "denied"],
                 "history": [
                     {
@@ -521,9 +530,13 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "begin_ns": 1,
                         "terminal_ns": 3,
                         "committed": True,
-                        "policy_reads": [{"scope": "spend:team:research", "version": 0}],
+                        "policy_reads": [
+                            {"scope": "spend:team:research", "version": 0, "value": 10_000}
+                        ],
                         "effect_reads": [],
-                        "effect_writes": [{"scope": "spend:team:research", "version": 1}],
+                        "effect_writes": [
+                            {"scope": "spend:team:research", "version": 1, "value": 4_000}
+                        ],
                     },
                     {
                         "operation_id": "22222222-2222-4222-8222-222222222222",
@@ -532,7 +545,9 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "begin_ns": 1,
                         "terminal_ns": 4,
                         "committed": False,
-                        "policy_reads": [{"scope": "spend:team:research", "version": 1}],
+                        "policy_reads": [
+                            {"scope": "spend:team:research", "version": 1, "value": 4_000}
+                        ],
                         "effect_reads": [],
                         "effect_writes": [],
                     },
@@ -544,8 +559,12 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
                         "terminal_ns": 6,
                         "committed": True,
                         "policy_reads": [],
-                        "effect_reads": [{"scope": "spend:team:research", "version": 1}],
-                        "effect_writes": [{"scope": "spend:team:research", "version": 2}],
+                        "effect_reads": [
+                            {"scope": "spend:team:research", "version": 1, "value": 4_000}
+                        ],
+                        "effect_writes": [
+                            {"scope": "spend:team:research", "version": 2, "value": 4_000}
+                        ],
                     },
                 ],
                 "final_policy_state": {
@@ -568,9 +587,19 @@ def _governed_envelope_fixture(runner: Any) -> tuple[dict[str, object], dict[str
         governed["history"],
         "fixture.governed.history",
         kind="governed",
+        initial_policy_state=governed["initial_policy_state"],
     )
-    verdict = check_pss(history)
-    governed["pss"] = {"valid": verdict.pss, "reason": verdict.reason}
+    verdict = check_pss(
+        history,
+        decision_validator=runner.REFERENCE_SPEND_DECISION_VALIDATOR,
+    )
+    governed["pss"] = {
+        "valid": verdict.pss,
+        "reason": verdict.reason,
+        "decision_validator_supplied": verdict.decision_validator_supplied,
+        "decision_semantics_checked": verdict.decision_semantics_checked,
+        "inconclusive": verdict.inconclusive,
+    }
     return evidence, release
 
 
@@ -581,13 +610,15 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
     assert report["committed_cents"] == 12_000
     assert report["overshoot_cents"] == 2_000
     assert report["stale_authorization"] is True
+    assert report["initial_policy_state"] == [
+        {"scope": "spend:team:research", "version": 0, "value": 10_000}
+    ]
     assert report["pss"] == {
         "valid": False,
-        "reason": (
-            "stale authorization: committed op weak-beta read a version of "
-            "spend:team:research already read by another committed op "
-            "(no serial order explains both)"
-        ),
+        "reason": "serialization cycle (RW -> RW) among weak-alpha -> weak-beta -> weak-alpha",
+        "decision_validator_supplied": True,
+        "decision_semantics_checked": False,
+        "inconclusive": False,
     }
     history = report["history"]
     assert isinstance(history, list)
@@ -598,10 +629,13 @@ def test_e2_weak_request_time_baseline_overshoots_and_fails_pss() -> None:
         operation["terminal_ns"] for operation in history
     )
     assert all(
-        operation["policy_reads"] == [{"scope": "spend:team:research", "version": 0}]
+        operation["policy_reads"]
+        == [{"scope": "spend:team:research", "version": 0, "value": 10_000}]
         for operation in history
     )
     assert {operation["effect_writes"][0]["version"] for operation in history} == {1, 2}
+    assert {operation["effect_writes"][0]["value"] for operation in history} == {4_000, -2_000}
+    assert all(operation["decision"] == "allow" for operation in history)
     ledger = report["effect_ledger"]
     assert isinstance(ledger, list)
     assert {row["operation_id"] for row in ledger} == {"weak-alpha", "weak-beta"}
@@ -946,6 +980,26 @@ def test_governed_evidence_binds_terminal_state_and_release() -> None:
         expected_release_descriptor=release,
     )
 
+    semantic_value_drift = deepcopy(valid)
+    payload = semantic_value_drift["evidence"]
+    assert isinstance(payload, dict)
+    governed = payload["governed"]
+    assert isinstance(governed, dict)
+    history = governed["history"]
+    assert isinstance(history, list)
+    denial = history[1]
+    assert isinstance(denial, dict)
+    reads = denial["policy_reads"]
+    assert isinstance(reads, list)
+    read = reads[0]
+    assert isinstance(read, dict)
+    read["value"] = 10_000
+    with pytest.raises(runner.DemoRunnerError, match="governed history does not replay as PSS"):
+        runner._validate_demo_evidence(
+            semantic_value_drift,
+            expected_release_descriptor=release,
+        )
+
     status_only_denial = deepcopy(valid)
     payload = status_only_denial["evidence"]
     assert isinstance(payload, dict)
@@ -1092,6 +1146,21 @@ def test_governed_evidence_binds_terminal_state_and_release() -> None:
             wrong_release,
             expected_release_descriptor=release,
         )
+
+
+def test_governed_evidence_rejects_inconclusive_pss_claim() -> None:
+    runner = _runner()
+    evidence, release = _governed_envelope_fixture(runner)
+    payload = evidence["evidence"]
+    assert isinstance(payload, dict)
+    governed = payload["governed"]
+    assert isinstance(governed, dict)
+    pss = governed["pss"]
+    assert isinstance(pss, dict)
+    pss["inconclusive"] = True
+
+    with pytest.raises(runner.DemoRunnerError, match="governed PSS evidence is invalid"):
+        runner._validate_demo_evidence(evidence, expected_release_descriptor=release)
 
 
 def test_approval_replay_requires_two_overlapping_resolution_attempts() -> None:
@@ -1329,7 +1398,7 @@ def test_runner_stages_containment_assets_from_reference_wheel(
     contract.mkdir(parents=True)
     for name in ("package.json", "package-lock.json"):
         shutil.copy2(ROOT / "integrations" / "openclaw-contract" / name, contract / name)
-    wheel = wheel_dir / "masugate_openclaw_reference-0.1.0-py3-none-any.whl"
+    wheel = wheel_dir / "masugate_openclaw_reference-0.1.1-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
         for name in (
             "masugate_openclaw_reference/containment/Dockerfile.reference_demo-reference",
@@ -1445,7 +1514,7 @@ def _write_verified_release_fixture(
     *,
     revision: str,
 ) -> None:
-    artifact = release / "python" / "masugate" / "masugate-0.1.0.whl"
+    artifact = release / "python" / "masugate" / "masugate-0.1.1.whl"
     artifact.parent.mkdir(parents=True)
     artifact.write_bytes(b"verified artifact")
     deployment = release / "deployment"

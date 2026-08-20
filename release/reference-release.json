@@ -1,6 +1,6 @@
 {
   "schema_version": "masugate.reference-release/v1",
-  "release_id": "masugate-openclaw-reference/0.1.0",
+  "release_id": "masugate-openclaw-reference/0.1.1",
   "channel": "research-preview",
   "runtime_target": {
     "os": "linux",
@@ -10,78 +10,78 @@
   "artifacts": {
     "platform": {
       "distribution": "masugate",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "entry_point": "masugated",
       "protocol_contract": "masugate.host-adapter.v1",
-      "connector_sdk_dependency": "masugate-connector-sdk==0.1.0"
+      "connector_sdk_dependency": "masugate-connector-sdk==0.1.1"
     },
     "connector_sdk": {
       "distribution": "masugate-connector-sdk",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "python_client": {
       "distribution": "masugate-client",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "adapter_core": {
       "distribution": "masugate-adapter-core",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "langchain_adapter": {
       "distribution": "masugate-langchain",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "agent_framework_adapter": {
       "distribution": "masugate-agent-framework",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "crewai_adapter": {
       "distribution": "masugate-crewai",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "google_calendar_connector": {
       "distribution": "masugate-connector-google-calendar",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "stripe_payment_intent_connector": {
       "distribution": "masugate-connector-stripe-payment-intent",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "filesystem_connector": {
       "distribution": "masugate-connector-filesystem",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "calendar_operation": {
       "distribution": "masugate-operation-calendar",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "spend_operation": {
       "distribution": "masugate-operation-spend",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "filesystem_operation": {
       "distribution": "masugate-operation-filesystem",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "typescript_client": {
       "package": "@masugate/client",
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "typescript_adapter_core": {
       "package": "@masugate/adapter-core",
-      "version": "0.1.0",
-      "client_dependency": "^0.1.0"
+      "version": "0.1.1",
+      "client_dependency": "^0.1.1"
     },
     "mcp_gateway": {
       "package": "@masugate/mcp-gateway",
-      "version": "0.1.0",
-      "client_dependency": "0.1.0"
+      "version": "0.1.1",
+      "client_dependency": "0.1.1"
     },
     "openclaw_adapter": {
       "package": "@masugate/openclaw",
-      "version": "0.1.0",
-      "client_dependency": "0.1.0",
-      "adapter_core_dependency": "0.1.0",
+      "version": "0.1.1",
+      "client_dependency": "0.1.1",
+      "adapter_core_dependency": "0.1.1",
       "bundled_dependencies": [
         "@masugate/adapter-core",
         "@masugate/client",
@@ -91,9 +91,9 @@
     },
     "reference_deployment": {
       "distribution": "masugate-openclaw-reference",
-      "version": "0.1.0",
-      "platform_dependency": "masugate==0.1.0",
-      "python_client_dependency": "masugate-client==0.1.0",
+      "version": "0.1.1",
+      "platform_dependency": "masugate==0.1.1",
+      "python_client_dependency": "masugate-client==0.1.1",
       "schema": {
         "id": "masugate-openclaw-reference",
         "version": 1,

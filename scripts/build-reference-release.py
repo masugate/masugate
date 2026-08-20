@@ -36,10 +36,10 @@ MANIFEST_SCHEMA_PATH = ROOT / "release" / "reference-release.schema.json"
 COMPATIBILITY_MATRIX_PATH = ROOT / "release" / "compatibility-matrix.json"
 NPM_CLEAN_CONSUMER_LOCK_PATH = ROOT / "release" / "npm-clean-consumer-lock.json"
 _NPM_CLEAN_CONSUMER_TARBALLS = {
-    "@masugate/client": "masugate-client-0.1.0.tgz",
-    "@masugate/adapter-core": "masugate-adapter-core-0.1.0.tgz",
-    "@masugate/mcp-gateway": "masugate-mcp-gateway-0.1.0.tgz",
-    "@masugate/openclaw": "masugate-openclaw-0.1.0.tgz",
+    "@masugate/client": "masugate-client-0.1.1.tgz",
+    "@masugate/adapter-core": "masugate-adapter-core-0.1.1.tgz",
+    "@masugate/mcp-gateway": "masugate-mcp-gateway-0.1.1.tgz",
+    "@masugate/openclaw": "masugate-openclaw-0.1.1.tgz",
 }
 CANONICAL_REFERENCE_SOURCE = ROOT / "src" / "masugate_openclaw_reference"
 PACKAGED_REFERENCE_SOURCE = (
@@ -622,10 +622,10 @@ def _validate_npm_locks(manifest: dict[str, object]) -> None:
     if consumer_dependencies.get("openclaw") != host_npm.get("version"):
         raise ReleaseBuildError("npm clean-consumer OpenClaw version does not match host contract")
     for package, filename in {
-        "@masugate/client": "masugate-client-0.1.0.tgz",
-        "@masugate/adapter-core": "masugate-adapter-core-0.1.0.tgz",
-        "@masugate/mcp-gateway": "masugate-mcp-gateway-0.1.0.tgz",
-        "@masugate/openclaw": "masugate-openclaw-0.1.0.tgz",
+        "@masugate/client": "masugate-client-0.1.1.tgz",
+        "@masugate/adapter-core": "masugate-adapter-core-0.1.1.tgz",
+        "@masugate/mcp-gateway": "masugate-mcp-gateway-0.1.1.tgz",
+        "@masugate/openclaw": "masugate-openclaw-0.1.1.tgz",
     }.items():
         if consumer_dependencies.get(package) != marker + "/" + filename:
             raise ReleaseBuildError(f"npm clean-consumer does not select {package}'s built tarball")

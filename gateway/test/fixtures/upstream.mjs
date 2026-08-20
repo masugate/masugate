@@ -22,7 +22,7 @@ input.on("line", (line) => {
       result: {
         protocolVersion: request.params.protocolVersion,
         capabilities: { tools: {} },
-        serverInfo: { name: "masugate-gateway-test-upstream", version: "0.1.0" },
+        serverInfo: { name: "masugate-gateway-test-upstream", version: "0.1.1" },
       },
     });
     return;

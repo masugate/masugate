@@ -231,7 +231,7 @@ def _check_core_sdk_separation(core_wheel: Path, connector_sdk: Path) -> None:
             raise SystemExit("MasuGate core wheel has invalid distribution metadata")
         metadata = archive.read(metadata_names[0]).decode("utf-8")
     normalized_metadata = metadata.replace(" ", "")
-    if "Requires-Dist:masugate-connector-sdk==0.1.0" not in normalized_metadata:
+    if "Requires-Dist:masugate-connector-sdk==0.1.1" not in normalized_metadata:
         raise SystemExit("MasuGate core wheel must require the exact standalone connector SDK")
     print("core and connector SDK wheels have disjoint ownership and an exact dependency")
 

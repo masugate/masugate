@@ -7,4 +7,4 @@ software distributed here.
 Do not represent affiliation, endorsement, or a trademark license without
 separate written permission from the applicable rights holder.
 
-Version: `0.1.0` (research preview). Next: [Provenance](PROVENANCE.md).
+Version: `0.1.1` (research preview). Next: [Provenance](PROVENANCE.md).
