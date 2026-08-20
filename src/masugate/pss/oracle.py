@@ -120,6 +120,52 @@ def _operation_error(operation: Operation) -> str | None:
     )
 
 
+def _global_chain_error(
+    operations: tuple[Operation, ...],
+    initial_state: dict[str, ScopeAccess],
+) -> str | None:
+    """Validate history-wide version chains before replaying provider code."""
+
+    writer_of: dict[tuple[str, int], str] = {}
+    writers_by_scope: dict[str, list[int]] = {}
+    for operation in operations:
+        for write in operation.effect_writes:
+            key = (write.scope, write.version)
+            existing = writer_of.get(key)
+            if existing is not None:
+                return (
+                    f"operations {existing} and {operation.op_id} both write "
+                    f"{write.scope} version {write.version}"
+                )
+            writer_of[key] = operation.op_id
+            writers_by_scope.setdefault(write.scope, []).append(write.version)
+
+    for scope, versions in writers_by_scope.items():
+        expected = initial_state[scope].version + 1
+        for version in sorted(versions):
+            if version != expected:
+                return (
+                    f"scope {scope} has non-contiguous write versions: expected {expected}, "
+                    f"found {version}"
+                )
+            expected += 1
+
+    for operation in operations:
+        for read in operation.reads:
+            baseline_version = initial_state[read.scope].version
+            if read.version < baseline_version:
+                return (
+                    f"operation {operation.op_id} reads {read.scope} version {read.version} "
+                    f"before retained baseline {baseline_version}"
+                )
+            if read.version > baseline_version and (read.scope, read.version) not in writer_of:
+                return (
+                    f"operation {operation.op_id} reads unknown {read.scope} "
+                    f"version {read.version}"
+                )
+    return None
+
+
 def _respects_real_time(order: tuple[Operation, ...]) -> bool:
     position = {operation.op_id: index for index, operation in enumerate(order)}
     for earlier in order:
@@ -185,6 +231,15 @@ def check_pss_exhaustively(
                 f"malformed PSS history: {operation_error}",
                 decision_validator_supplied=validator_supplied,
             )
+
+    chain_error = _global_chain_error(operations, initial)
+    if chain_error is not None:
+        return PSSVerdict(
+            False,
+            (),
+            f"malformed PSS history: {chain_error}",
+            decision_validator_supplied=validator_supplied,
+        )
 
     for order in permutations(operations):
         if real_time and not _respects_real_time(order):

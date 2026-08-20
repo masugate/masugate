@@ -439,6 +439,39 @@ def test_malformed_history_never_invokes_a_supplied_decision_validator() -> None
         assert invoked == []
 
 
+def test_malformed_writer_chains_never_invoke_a_supplied_decision_validator() -> None:
+    malformed_histories = (
+        History(
+            (
+                _op("first", 0, 10, committed=True, writes=[(S, 1)]),
+                _op("duplicate", 0, 10, committed=True, writes=[(S, 1)]),
+            )
+        ),
+        History(
+            (
+                _op("first", 0, 10, committed=True, writes=[(S, 1)]),
+                _op("gap", 0, 10, committed=True, writes=[(S, 3)]),
+            )
+        ),
+    )
+
+    invoked: list[str] = []
+
+    def validator(operation: Operation, _state: Mapping[str, ScopeAccess]) -> str | None:
+        invoked.append(operation.op_id)
+        return None
+
+    for history in malformed_histories:
+        for verifier in (check_pss, check_pss_exhaustively):
+            invoked.clear()
+            verdict = verifier(history, decision_validator=validator)
+
+            assert not verdict.pss
+            assert verdict.decision_validator_supplied
+            assert not verdict.decision_semantics_checked
+            assert invoked == []
+
+
 def test_observable_reservation_is_a_separate_transition() -> None:
     reserve = Operation(
         op_id="purchase:reservation",
